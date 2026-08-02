@@ -11,13 +11,16 @@
   "email": "smkn1tatapaan@gmail.com",
   "telepon": "-",
   "website": "-",
-  "kepsekNama": "Daisy A. Lengkong, S.Pd",
-  "kepsekNip": "19721205 200012 2 004",
-  "kepsekNuptk": "9537750652300033",
-  "kepsekPangkat": "Pembina",
-  "kepsekGolongan": "IVa",
-  "logoKiri": "https://lh3.googleusercontent.com/d/1nP2K1yUWI88X8b8o1fK-a7nXkGVodRkn=s220",
-  "logoKanan": "https://lh3.googleusercontent.com/d/1fLA2UejxTSHpX7v_VJb2FWoWc0p2Pa_k=s220",
-  "capSekolah": "",
-  "ttdKepsek": ""
+  "kepsek": {
+    "kepsekNama": "Daisy A. Lengkong, S.Pd",
+    "kepsekNip": "19721205 200012 2 004",
+    "kepsekNuptk": "9537750652300033",
+    "kepsekNuptk": "9537750652300033",
+    "kepsekPangkat": "Pembina",
+    "kepsekGolongan": "IVa",
+    "logoKiri": "https://lh3.googleusercontent.com/d/1nP2K1yUWI88X8b8o1fK-a7nXkGVodRkn=s220",
+    "logoKanan": "https://lh3.googleusercontent.com/d/1fLA2UejxTSHpX7v_VJb2FWoWc0p2Pa_k=s220",
+    "capSekolah": "",
+    "ttdKepsek": ""
+  }
 }
