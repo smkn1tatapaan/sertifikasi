@@ -1,23 +1,9 @@
 {
-  "nama": "SMK NEGERI 1 TATAPAAN",
-  "nss": "341170508009",
-  "npsn": "69765016",
-  "alamat": "Jln. Raya Paslaten Rap-Rap",
-  "desa": "Paslaten Satu",
-  "kecamatan": "Tatapaan",
-  "kabupaten": "Kab. Minahasa Selatan",
-  "provinsi": "Sulawesi Utara",
-  "kodepos": "95352",
-  "email": "smkn1tatapaan@gmail.com",
-  "telepon": "-",
-  "website": "-",
-  "kepsekNama": "Daisy A. Lengkong, S.Pd",
-  "kepsekNip": "19721205 200012 2 004",
-  "kepsekNuptk": "9537750652300033",
-  "kepsekPangkat": "Pembina",
-  "kepsekGolongan": "IVa",
-  "logoKiri": "https://lh3.googleusercontent.com/d/1nP2K1yUWI88X8b8o1fK-a7nXkGVodRkn=s220",
-  "logoKanan": "https://lh3.googleusercontent.com/d/1fLA2UejxTSHpX7v_VJb2FWoWc0p2Pa_k=s220",
-  "capSekolah": "",
-  "ttdKepsek": ""
+  "nama": "SD NEGERI CONTOH 1",
+  "alamat": "Jl. Pendidikan No. 123, Kota Contoh",
+  "kepsek": {
+    "nama": "Budi Santoso, S.Pd., M.Pd.",
+    "nip": "19700101 199512 1 001",
+    "pangkat": "Pembina / IV.a"
+  }
 }
