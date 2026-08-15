@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SertiGen - Generator Laporan Sertifikasi Guru</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#1E40AF',
+                        accent: '#10B981',
+                        background: '#F8FAFC',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', Arial;
+            background-color: #F8FAFC;
+        }
+        /* Styling Khusus Dokumen A4 / F4 */
+        .document-preview-container {
+            font-family: Arial;
+            color: black;
+            background: #cbd5e1; /* slate-300 */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .a4-wrapper {
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            min-height: max-content;
+            width: 100%;
+        }
+        .f4-sheet {
+            background: white;
+            width: 21cm;
+            min-height: 33cm;
+            padding: 0.3in 0.3in 0.3in 0.5in; /* Top: 0.3in, Right: 0.3in, Bottom: 0.3in, Left: 0.5in */
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        .f4-landscape {
+            background: white;
+            width: 33cm;
+            min-height: 21cm;
+            padding: 0.3in 0.3in 0.3in 0.5in;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        
+        .word-section-break { display: none; }
+        #doc-render-target { 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: top center;
+            transition: transform 0.2s ease-in-out;
+            width: 100%;
+        }
+        /* Print Media Queries */
+        @media print {
+            body * { visibility: hidden; }
+            #doc-render-target, #doc-render-target * { visibility: visible; }
+            #doc-render-target { position: absolute; left: 0; top: 0; transform: scale(1) !important; box-shadow: none; margin: 0; padding: 0; }
+            @page { margin: 0; }
+            .no-print-border { border: none !important; }
+        }
+        
+        /* Dokumen Elemen Styling Standard Resmi */
+        
+        .doc-header-table { width: 100%; margin-bottom: 2px; }
+        .doc-header-table td { vertical-align: middle; }
+        .doc-header-border { border-bottom: 1px solid black; margin-bottom: 15px; padding-bottom: 2px; }
+        .doc-logo { width: auto; height: 1.10in; object-fit: contain; }
+        
+        .doc-body { font-size: 10.5pt; line-height: 1.4; text-align: justify; }
+        .doc-body-jurnal { font-size: 9pt; } 
+        
+        .doc-table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 8px; font-size: 8.5pt; }
+        .doc-table th, .doc-table td { border: 1px solid black; padding: 4px; text-align: center; vertical-align: middle; }
+        .doc-table th { font-weight: bold; background-color: #f8fafc; }
+        
+        .info-table { font-size: 10pt; line-height: 1.3; margin-bottom: 15px;}
+        .info-table td { vertical-align: center; padding: 1px 0; border: none;}
+        .info-table td:nth-child(2) { width: 15px; text-align: center; } /* Colon column */
+        
+        .doc-signatures { width: 100%; margin-top: 15px; page-break-inside: avoid; border: none;}
+        .doc-signatures td { vertical-align: center; border: none;}
+        .doc-sign-box { min-height: 55px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative;}
+        .doc-sign-img { height: 50px; width: auto; object-fit: contain; mix-blend-mode: multiply; position: absolute; bottom: 15px;}
+        .doc-cap-img { height: 65px; width: auto; object-fit: contain; opacity: 0.85; position: absolute; bottom: 5px; left: 10px; z-index: 0; mix-blend-mode: multiply;}
+        .doc-sign-name { font-weight: bold; text-decoration: underline; z-index: 1; position: relative;}
+        .doc-sign-nip { z-index: 1; position: relative; }
+        
+        /* Custom Scrollbar UI */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; padding: 15px 25px;
+            background: #333; color: white; border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: translateY(100px); opacity: 0; transition: all 0.3s ease; z-index: 50;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        
+        td[contenteditable="true"]:hover { background-color: #fef08a; cursor: text; }
+        td[contenteditable="true"]:focus { background-color: #fff; outline: 2px solid #2563EB; outline-offset: -2px; }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col overflow-hidden text-slate-800 bg-background">
+    <!-- Header Navbar -->
+    <header class="bg-white border-b border-slate-200 z-20 flex-shrink-0 glass-panel shadow-sm">
+        <div class="h-16 px-6 flex items-center justify-between">
+            <!-- Kiri: Brand & Nav Utama -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button id="toggle-sidebar-btn" onclick="toggleSidebar()" class="hidden text-slate-600 hover:bg-slate-100 p-2 rounded-lg transition-colors" title="Toggle Editor Panel">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                
+                <nav class="flex space-x-1" id="main-nav">
+                    <button onclick="switchMode('cover')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="cover">Cover</button>
+                    <button onclick="switchMode('sptjm')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="sptjm">SPTJM</button>
+                    <button onclick="switchMode('absen')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="absen">Absen</button>
+                    <button onclick="switchMode('jurnal')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="jurnal">Jurnal</button>
+                    <div class="w-px h-6 bg-slate-200 self-center mx-2"></div>
+                    <button onclick="switchMode('pengaturan')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="pengaturan"><i class="fa-solid fa-gear mr-1.5"></i> Pengaturan</button>
+                </nav>
+            </div>
+            <!-- Kanan: Status & Controls -->
+            <div class="flex items-center space-x-3">
+                <span id="auto-save-indicator" class="mr-2 text-xs font-medium text-accent bg-green-50 px-2 py-1 rounded-full flex items-center opacity-0 transition-opacity">
+                    <i class="fa-solid fa-check-circle mr-1"></i> Tersimpan
+                </span>
+                
+                <!-- Zoom Controls -->
+                <div class="flex items-center bg-slate-100 rounded-lg p-1 hidden" id="zoom-controls">
+                    <button onclick="changeZoom(-0.1)" class="p-1 hover:bg-white rounded text-slate-600"><i class="fa-solid fa-minus"></i></button>
+                    <span id="zoom-level" class="text-xs font-medium px-2 min-w-[50px] text-center">100%</span>
+                    <button onclick="changeZoom(0.1)" class="p-1 hover:bg-white rounded text-slate-600"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                
+                <!-- Export Controls -->
+                <div class="flex space-x-2 hidden" id="export-controls">
+                    <button onclick="exportWord()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center" id="btn-export-word" title="Export ke Word">
+                        <i class="fa-solid fa-file-word mr-1.5"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sub Nav untuk Data Master -->
+        <div id="master-sub-nav" class="h-12 border-t border-slate-100 bg-slate-50/80 flex items-center px-6 space-x-2 transition-all">
+            <button onclick="switchMasterTab('sekolah')" class="sub-nav-btn active px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-white text-primary shadow-sm border border-slate-200" data-tab="sekolah"><i class="fa-solid fa-school mr-1.5"></i> Data Sekolah</button>
+            <button onclick="switchMasterTab('guru')" class="sub-nav-btn px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-slate-600 hover:bg-white hover:text-primary" data-tab="guru"><i class="fa-solid fa-chalkboard-user mr-1.5"></i> Data Guru</button>
+            <button onclick="switchMasterTab('pengawas')" class="sub-nav-btn px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-slate-600 hover:bg-white hover:text-primary" data-tab="pengawas"><i class="fa-solid fa-user-tie mr-1.5"></i> Data Pengawas</button>
+        </div>
+    </header>
+    
+    <!-- Main Content Area -->
+    <main class="flex-1 flex overflow-hidden relative">
+        <!-- Kiri: Area Input/Form -->
+        <div id="form-area" class="flex-1 overflow-y-auto p-6 scroll-smooth transition-all duration-300">
+            <div id="view-content" class="max-w-5xl mx-auto space-y-6"></div>
+        </div>
+        <!-- Kanan: Area Live Preview -->
+        <div id="preview-area" class="w-[60%] border-l border-slate-200 document-preview-container flex-col items-center hidden relative transition-all duration-300">
+            <div class="a4-wrapper">
+                <div id="doc-render-target">
+                    <!-- Preview dokumen HTML dirender disini -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Elegan & Menarik -->
+    <footer class="bg-white border-t border-slate-200 py-3 px-6 text-center text-xs text-slate-600 shadow-sm z-20 flex-shrink-0">
+        <div class="max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="mx-auto text-center font-semibold bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600 bg-clip-text text-transparent">
+                <i>Copyright</i> &copy; 2026-2030 R.F.K<br><span class="text-xs font-normal text-slate-500 italic">Semoga bermanfaat</span>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Notifikasi</div>
+
+    <script>
+        const URL_SEKOLAH = 'https://raw.githubusercontent.com/tifalockheart930/kuroba/refs/heads/main/db_sekolah.json'; 
+        const URL_GURU = 'https://raw.githubusercontent.com/tifalockheart930/kuroba/refs/heads/main/db_guru.json';       
+        const DEFAULT_STATE = {
+            sekolah: {}, 
+            guru: [],    
+            activeGuruId: 20,
+            pengawas: {
+                nama: "Dra. Moontje Kalalo", nip: "19680305 199412 2 004",
+                golongan: "IV/b", jabatan: "Pengawas Bina", instansi: "Dinas Pendidikan Daerah",
+                ttdPengawas: ""
+            },
+            generator: {
+                bulan: new Date().getMonth() + 1, 
+                tahun: new Date().getFullYear(),
+                nomorSurat: "900/&emsp;&emsp;/SMKN.1/TTPN/VIII-2026",
+                kotaPenetapan: "Tatapaan",
+                tanggalPenetapan: new Date().toISOString().split('T')[0]
+            },
+            jurnalEntries: {} 
+        };
+        
+        let appState = null;
+        let activeDocType = 'sptjm'; 
+        let currentZoom = 1;
+        let saveTimeout;
+        let isSidebarCollapsed = false;
+        
+        const $ = id => document.getElementById(id);
+        const updateJournalUI = () => { saveState(); renderJurnalEditorForm($('view-content')); renderDocumentPreview(); };
+        
+        async function initApp() {
+            let savedState = JSON.parse(localStorage.getItem('sertigen_state'));
+            
+            if (!savedState) {
+                appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                try {
+                    const resSekolah = await fetch(URL_SEKOLAH);
+                    if (resSekolah.ok) appState.sekolah = await resSekolah.json();
+                } catch (e) {
+                    appState.sekolah = { nama: "SMK CONTOH (Gagal Load Github)" };
+                }
+                try {
+                    const resGuru = await fetch(URL_GURU);
+                    if (resGuru.ok) appState.guru = await resGuru.json();
+                } catch (e) {
+                    appState.guru = [{ id: 1, nama: "Guru Contoh (Gagal Load Github)" }];
+                }
+                saveState();
+            } else {
+                appState = savedState;
+                if (appState.guru && !Array.isArray(appState.guru)) {
+                    appState.guru = [{...appState.guru, id: 1}];
+                    appState.activeGuruId = 1;
+                }
+            }
+            
+            if(!appState.jurnalEntries) appState.jurnalEntries = {};
+            if(!appState.holidayCache) appState.holidayCache = {};
+            switchMode('pengaturan');
+        }
+        
+        function saveState() {
+            localStorage.setItem('sertigen_state', JSON.stringify(appState));
+            showAutoSave();
+        }
+        
+        function showAutoSave() {
+            const ind = $('auto-save-indicator');
+            if(!ind) return;
+            ind.classList.remove('opacity-0');
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => { ind.classList.add('opacity-0'); }, 2000);
+        }
+        
+        function showToast(message) {
+            const toast = $('toast');
+            if(!toast) return;
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function toggleSidebar() {
+            isSidebarCollapsed = !isSidebarCollapsed;
+            applySidebarState();
+        }
+        
+        function applySidebarState() {
+            const formArea = $('form-area');
+            const previewArea = $('preview-area');
+            if (activeDocType === 'jurnal') {
+                if (isSidebarCollapsed) {
+                    formArea.classList.add('hidden');
+                    previewArea.classList.remove('w-[60%]');
+                    previewArea.classList.add('w-full');
+                } else {
+                    formArea.classList.remove('hidden');
+                    previewArea.classList.remove('w-full');
+                    previewArea.classList.add('w-[60%]');
+                }
+            }
+        }
+        
+        function getActiveGuru() {
+            return appState.guru.find(g => g.id === appState.activeGuruId) || appState.guru[0] || {};
+        }
+        
+        function getJournalKey() {
+            return `${appState.generator.tahun}_${appState.generator.bulan}_${appState.activeGuruId}`;
+        }
+        
+        async function checkAndFetchHolidays(tahun) {
+            if (!appState.holidayCache) appState.holidayCache = {};
+            if (appState.holidayCache[tahun]) return; 
+            try {
+                showToast(`Sinkronisasi kalender libur nasional ${tahun}...`);
+                const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${tahun}/ID`);
+                if (response.ok) {
+                    const data = await response.json();
+                    let holidayMap = {};
+                    data.forEach(item => { holidayMap[item.date] = item.localName; });
+                    appState.holidayCache[tahun] = holidayMap;
+                    saveState();
+                }
+            } catch (e) {
+                console.error("Gagal mengambil data libur otomatis", e);
+            }
+        }
+        
+        function getActiveJournalEntries() {
+            const jKey = getJournalKey();
+            if (!appState.jurnalEntries[jKey]) {
+                const startDay = new Date(appState.generator.tanggalPenetapan).getDate();
+                const endDay = appState.generator.tanggalAkhirJurnal || new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
+                appState.jurnalEntries[jKey] = generateJournalDays(appState.generator.bulan, appState.generator.tahun, startDay, endDay);
+                saveState();
+            }
+            return appState.jurnalEntries[jKey];
+        }
+        
+        function generateJournalDays(bulan, tahun, startDay = 1, endDay = null) {
+            const daysInMonth = new Date(tahun, bulan, 0).getDate();
+            const actualEnd = endDay || daysInMonth;
+            let entries = [];
+            for(let i = startDay; i <= actualEnd; i++) {
+                let d = new Date(tahun, bulan - 1, i);
+                let dayIdx = d.getDay();
+                if (dayIdx === 0 || dayIdx === 6) continue; 
+                
+                let isoDate = `${tahun}-${bulan.toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+                let holidayName = appState.holidayCache && appState.holidayCache[tahun] ? appState.holidayCache[tahun][isoDate] : null;
+                let isHoliday = (holidayName !== null && holidayName !== undefined);
+                
+                entries.push({
+                    id: `row_auto_${i}`,
+                    tanggal: `${i.toString().padStart(2, '0')}/${bulan.toString().padStart(2, '0')}/${tahun}`,
+                    isoDate: isoDate,
+                    isHoliday: isHoliday,
+                    materi: holidayName ? `${holidayName}` : '',
+                    jp: '', kelas: '', hadir: '', tidakHadir: '', totalSiswa: '', masalah: '', foto: '',
+                    keterangan: isHoliday ? 'Libur' : '',
+                    isSubRow: false
+                });
+            }
+            return entries;
+        }
+        
+        function getNamaBulan(b) {
+            const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            return bulan[b - 1] || "";
+        }
+        
+        function formatTanggalIndo(dateStr) {
+            const d = new Date(dateStr);
+            if (isNaN(d)) return dateStr;
+            return `${d.getDate()} ${getNamaBulan(d.getMonth() + 1)} ${d.getFullYear()}`;
+        }
+        
+        function angkaKeTerbilang(n) {
+            const satuan = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
+            n = Math.floor(n);
+            if (n < 0) return "";
+            if (n < 12) return satuan[n];
+            if (n < 20) return angkaKeTerbilang(n - 10) + " belas";
+            if (n < 100) return (satuan[Math.floor(n / 10)] || angkaKeTerbilang(Math.floor(n / 10))) + " puluh " + (n % 10 !== 0 ? " " + angkaKeTerbilang(n % 10) : "");
+            if (n < 200) return "seratus" + (n % 100 !== 0 ? " " + angkaKeTerbilang(n - 100) : "");
+            if (n < 1000) return angkaKeTerbilang(Math.floor(n / 100)) + " ratus" + (n % 100 !== 0 ? " " + angkaKeTerbilang(n % 100) : "");
+            if (n < 2000) return "seribu" + (n % 1000 !== 0 ? " " + angkaKeTerbilang(n - 1000) : "");
+            if (n < 10000) return angkaKeTerbilang(Math.floor(n / 1000)) + " ribu" + (n % 1000 !== 0 ? " " + angkaKeTerbilang(n % 1000) : "");
+            return n.toString();
+        }
+
+        function dateToFullIndoWords(dateStr) {
+            if(!dateStr) return "....................";
+            const d = new Date(dateStr);
+            if(isNaN(d.getTime())) return "....................";
+            const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            
+            const hari = days[d.getDay()];
+            const tglWords = angkaKeTerbilang(d.getDate()).trim();
+            const blnWords = months[d.getMonth()];
+            const thnWords = angkaKeTerbilang(d.getFullYear()).trim();
+            
+            return `Pada hari ini ${hari} tanggal ${tglWords} bulan ${blnWords} tahun ${thnWords} saya yang <br> bertanda tangan dibawah ini :`;
+        }
+        
+        function calculatePenetapanDate(bulan, tahun) {
+            const today = new Date();
+            const targetBulan = parseInt(bulan);
+            const targetTahun = parseInt(tahun);
+            if (targetBulan === (today.getMonth() + 1) && targetTahun === today.getFullYear()) {
+                const yyyy = today.getFullYear();
+                const mm = (today.getMonth() + 1).toString().padStart(2, '0');
+                const dd = today.getDate().toString().padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+            let d = new Date(targetTahun, targetBulan - 1, 1);
+            let dayOfWeek = d.getDay();
+            if (dayOfWeek === 6) d.setDate(3);
+            else if (dayOfWeek === 0) d.setDate(2);
+            
+            const yyyy = d.getFullYear();
+            const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+            const dd = d.getDate().toString().padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+        
+        function resizeAndCompressImage(dataUrl, callback) {
+            let img = new Image();
+            img.onload = function() {
+                let canvas = document.createElement('canvas');
+                let ctx = canvas.getContext('2d');
+                let maxW = 800; let maxH = 800;
+                let w = img.width; let h = img.height;
+                if(w > h) { if(w > maxW) { h *= maxW/w; w = maxW; } }
+                else { if(h > maxH) { w *= maxH/h; h = maxH; } }
+                canvas.width = w; canvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = dataUrl;
+        }
+        
+        function handleGlobalImageUpload(event, objPath, key) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (objPath === 'active_guru') {
+                    const guruIdx = appState.guru.findIndex(g => g.id === appState.activeGuruId);
+                    if (guruIdx !== -1) appState.guru[guruIdx][key] = e.target.result;
+                } else {
+                    appState[objPath][key] = e.target.result;
+                }
+                saveState();
+                
+                const content = $('view-content');
+                if (content && content.innerHTML.includes('Pengaturan Parameter Laporan')) {
+                    renderPengaturanForm(content);
+                } else if (currentMasterTab) {
+                    switchMasterTab(currentMasterTab);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateJournalRow(index, key, value) {
+            const jKey = getJournalKey();
+            if(appState.jurnalEntries[jKey] && appState.jurnalEntries[jKey][index]) {
+                appState.jurnalEntries[jKey][index][key] = value;
+                saveState();
+            }
+        }
+        
+        function updateJournalRowFromPreview(index, key, element) {
+            updateJournalRow(index, key, element.innerText);
+        }
+        
+        function uploadPhotoFromPreview(event, index) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                resizeAndCompressImage(e.target.result, function(compressedData) {
+                    updateJournalRow(index, 'foto', compressedData);
+                    renderDocumentPreview(); 
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* 1. KEBUTUHAN UPDATE 1: FITUR EDITOR BARIS JURNAL & TOGGLE LIBUR */
+        function toggleHolidayRow(index) {
+            const jKey = getJournalKey();
+            const entries = appState.jurnalEntries[jKey];
+            if (entries && entries[index]) {
+                const row = entries[index];
+                row.isHoliday = !row.isHoliday;
+                if (row.isHoliday) {
+                    if (!row.materi || row.materi.trim() === '' || row.materi === '-') {
+                        row.materi = 'Libur';
+                    }
+                    row.keterangan = 'Libur';
+                } else {
+                    if (row.materi === 'Libur') row.materi = '';
+                    if (row.keterangan === 'Libur') row.keterangan = '';
+                }
+                updateJournalUI();
+            }
+        }
+
+        function addNewMainRow() {
+            const jKey = getJournalKey();
+            const currentEntries = getActiveJournalEntries();
+            const daysInMonth = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
+            const mainRowCount = currentEntries.filter(row => !row.isSubRow).length;
+            
+            if (mainRowCount >= daysInMonth) {
+                showToast("Batas maksimal baris utama untuk bulan ini tercapai.");
+                return;
+            }
+            
+            const newRow = {
+                id: `row_manual_${Date.now()}`,
+                tanggal: `Baris Baru`,
+                isoDate: new Date(appState.generator.tahun, appState.generator.bulan - 1, mainRowCount + 1).toISOString().split('T')[0],
+                isHoliday: false,
+                materi: "", jp: "", kelas: "", hadir: "", tidakHadir: "", totalSiswa: "", masalah: "", foto: "", keterangan: "",
+                isSubRow: false
+            };
+            
+            currentEntries.push(newRow);
+            updateJournalUI();
+            showToast("Baris utama berhasil ditambahkan.");
+        }
+        
+        function addJournalSubRow(index) {
+            const jKey = getJournalKey();
+            let baseRow = appState.jurnalEntries[jKey][index];
+            let newRow = { 
+                ...baseRow, 
+                id: `row_sub_${Date.now()}`, 
+                isSubRow: true, 
+                isHoliday: false, 
+                materi: "", jp: "", kelas: "", hadir: "", tidakHadir: "", totalSiswa: "", masalah: "", foto: "", keterangan: "" 
+            };
+            let insertIndex = index + 1;
+            while (insertIndex < appState.jurnalEntries[jKey].length && appState.jurnalEntries[jKey][insertIndex].isSubRow) insertIndex++;
+            appState.jurnalEntries[jKey].splice(insertIndex, 0, newRow);
+            updateJournalUI();
+        }
+        
+        function deleteJournalRow(index) {
+            const jKey = getJournalKey();
+            const entries = appState.jurnalEntries[jKey];
+            if (entries) {
+                const rowToDelete = entries[index];
+                if (rowToDelete.isSubRow) {
+                    entries.splice(index, 1);
+                } else {
+                    let deleteCount = 1;
+                    for (let i = index + 1; i < entries.length; i++) {
+                        if (entries[i].isSubRow) deleteCount++; else break; 
+                    }
+                    entries.splice(index, deleteCount);
+                }
+                updateJournalUI();
+                showToast(rowToDelete.isSubRow ? "Sub baris berhasil dihapus." : "Baris utama dan sub baris berhasil dihapus.");
+            }
+        }
+        
+        async function resetJournalRows() {
+            const jKey = getJournalKey();
+            await checkAndFetchHolidays(appState.generator.tahun);
+            const startDay = new Date(appState.generator.tanggalPenetapan).getDate();
+            const endDay = appState.generator.tanggalAkhirJurnal || new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
+            appState.jurnalEntries[jKey] = generateJournalDays(appState.generator.bulan, appState.generator.tahun, startDay, endDay);
+            updateJournalUI();
+            showToast("Tabel jurnal dikembalikan ke kondisi awal.");
+        }
+
+        let currentMasterTab = 'sekolah';
+        
+        async function switchMode(mode) {
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-blue-50', 'text-primary', 'active');
+                el.classList.add('text-slate-600');
+                if(el.dataset.mode === mode) {
+                    el.classList.add('bg-blue-50', 'text-primary', 'active');
+                    el.classList.remove('text-slate-600');
+                }
+            });
+            const content = $('view-content'), formArea = $('form-area'), previewArea = $('preview-area');
+            const masterSubNav = $('master-sub-nav'), exportControls = $('export-controls'), zoomControls = $('zoom-controls'), toggleBtn = $('toggle-sidebar-btn');
+            
+            formArea.classList.remove('hidden'); previewArea.classList.remove('hidden', 'flex');
+            masterSubNav.classList.remove('flex', 'hidden'); toggleBtn.classList.add('hidden');
+            
+            if(mode === 'master') {
+                masterSubNav.classList.add('flex'); previewArea.classList.add('hidden'); exportControls.classList.add('hidden'); zoomControls.classList.add('hidden');
+                content.classList.add('max-w-5xl', 'mx-auto');
+                switchMasterTab(currentMasterTab);
+            } else if (mode === 'pengaturan') {
+                masterSubNav.classList.add('hidden'); previewArea.classList.add('hidden'); exportControls.classList.add('hidden'); zoomControls.classList.add('hidden');
+                content.classList.add('max-w-5xl', 'mx-auto');
+                renderPengaturanForm(content);
+            } else {
+                masterSubNav.classList.add('hidden'); previewArea.classList.add('flex'); exportControls.classList.remove('hidden'); zoomControls.classList.remove('hidden');
+                activeDocType = mode;
+                if (mode === 'jurnal') {
+                    toggleBtn.classList.remove('hidden'); content.classList.remove('max-w-5xl', 'mx-auto');
+                    applySidebarState();
+                    await checkAndFetchHolidays(appState.generator.tahun);
+                    const jKey = getJournalKey();
+                    if (!appState.jurnalEntries[jKey]) { appState.jurnalEntries[jKey] = generateJournalDays(appState.generator.bulan, appState.generator.tahun); saveState(); }
+                    renderJurnalEditorForm(content);
+                } else {
+                    formArea.classList.add('hidden'); previewArea.classList.remove('w-[60%]'); previewArea.classList.add('w-full');
+                }
+                setPreviewDoc(mode);
+            }
+        }
+        
+        function switchMasterTab(tabName) {
+            currentMasterTab = tabName;
+            document.querySelectorAll('.sub-nav-btn').forEach(el => {
+                el.classList.remove('bg-white', 'text-primary', 'shadow-sm', 'border', 'border-slate-200', 'active');
+                el.classList.add('text-slate-600');
+                if(el.dataset.tab === tabName) {
+                    el.classList.add('bg-white', 'text-primary', 'shadow-sm', 'border', 'border-slate-200', 'active');
+                    el.classList.remove('text-slate-600', 'hover:bg-white', 'hover:text-primary');
+                } else { el.classList.add('hover:bg-white', 'hover:text-primary'); }
+            });
+            const content = $('view-content'); content.innerHTML = '';
+            switch(tabName) { case 'sekolah': renderFormSekolah(content); break; case 'guru': renderFormGuru(content); break; case 'pengawas': renderFormPengawas(content); break; }
+        }
+        
+        function updateState(obj, key, value) {
+            appState[obj][key] = value;
+            if (obj === 'generator' && (key === 'bulan' || key === 'tahun')) {
+                const newTanggal = calculatePenetapanDate(appState.generator.bulan, appState.generator.tahun);
+                appState.generator.tanggalPenetapan = newTanggal;
+                appState.generator.tanggalAkhirJurnal = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
+                appState.generator.bulanAkhirHadir = appState.generator.bulan;
+                const tglInput = $('input-tanggal-penetapan'); if (tglInput) tglInput.value = newTanggal;
+                
+                const romanMonths = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+                const bulanIdx = parseInt(appState.generator.bulan) - 1;
+                const roman = romanMonths[bulanIdx];
+                let currentNo = appState.generator.nomorSurat || "";
+                const regex = /([\/|\\])[IVX]+([\/|\\|-])\d{4}$/;
+                if (regex.test(currentNo)) {
+                    appState.generator.nomorSurat = currentNo.replace(regex, `$1${roman}$2${appState.generator.tahun}`);
+                    const sptjmInput = $('input-no-sptjm'); if (sptjmInput) sptjmInput.value = appState.generator.nomorSurat;
+                }
+            }
+            saveState();
+        }
+
+        function createInputGroup(label, type, objPath, key, colSpan = 1) {
+            let value = appState[objPath][key] || '';
+            let action = `updateState('${objPath}', '${key}', this.value)`;
+            const gridClass = colSpan > 1 ? `col-span-${colSpan}` : 'col-span-1';
+            return `<div class="${gridClass}"><label class="block text-sm font-medium text-slate-700 mb-1">${label}</label><input type="${type}" value="${value}" oninput="${action}" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"></div>`;
+        }
+        
+        function createFileGroup(label, objPath, key) {
+            let fileData = '';
+            if (objPath === 'active_guru') {
+                const activeGuru = appState.guru.find(g => g.id === appState.activeGuruId);
+                fileData = activeGuru ? activeGuru[key] : '';
+            } else { fileData = appState[objPath] ? appState[objPath][key] : ''; }
+            
+            const hasData = fileData ? 'border-primary bg-blue-50' : 'border-slate-300';
+            const imgPreview = fileData ? `<img src="${fileData}" class="h-12 mx-auto mt-2 object-contain border rounded p-1 bg-white">` : '';
+            return `<div class="col-span-1"><label class="block text-sm font-medium text-slate-700 mb-1">${label}</label><div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${hasData} border-dashed rounded-lg hover:bg-slate-50 cursor-pointer relative" onclick="document.getElementById('file-${key}').click()"><div class="space-y-1 text-center"><i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400"></i><div class="flex text-sm text-slate-600 justify-center"><span class="font-medium text-primary">Upload file</span></div><p class="text-xs text-slate-500">PNG, JPG (Max 2MB)</p>${imgPreview}</div><input id="file-${key}" type="file" accept="image/*" class="sr-only" onchange="handleGlobalImageUpload(event, '${objPath}', '${key}')"></div></div>`;
+        }
+
+        let rangeSelectionStep = 0;
+        function handleJurnalCalendarClick(day) {
+            const bln = appState.generator.bulan;
+            const thn = appState.generator.tahun;
+            
+            if (rangeSelectionStep === 0) {
+                // Set tanggal awal jurnal SAJA, jangan ubah tanggal penetapan
+                appState.generator.tanggalAwalJurnal = day;
+                appState.generator.tanggalAkhirJurnal = day;
+                rangeSelectionStep = 1;
+                showToast("Pilih tanggal akhir rentang jurnal.");
+            } else {
+                const startDay = appState.generator.tanggalAwalJurnal;
+                if (day < startDay) {
+                    appState.generator.tanggalAkhirJurnal = startDay;
+                    appState.generator.tanggalAwalJurnal = day;
+                } else {
+                    appState.generator.tanggalAkhirJurnal = day;
+                }
+                rangeSelectionStep = 0;
+                updateJournalEntriesRange();
+            }
+            saveState();
+            renderPengaturanForm($('view-content'));
+        }
+
+
+        let clickStepHadir = 0;
+        function handleHadirMonthClick(m) {
+            if (clickStepHadir === 0 || clickStepHadir === 2) {
+                appState.generator.bulanAwalHadir = m;
+                appState.generator.bulanAkhirHadir = m;
+                clickStepHadir = 1;
+            } else if (clickStepHadir === 1) {
+                let start = parseInt(appState.generator.bulanAwalHadir);
+                let end = m;
+                if (end < start) {
+                    appState.generator.bulanAwalHadir = end;
+                    appState.generator.bulanAkhirHadir = start;
+                } else {
+                    appState.generator.bulanAkhirHadir = end;
+                }
+                clickStepHadir = 2;
+            }
+            saveState();
+            if (typeof renderPengaturanForm === 'function' && $('view-content')) {
+                renderPengaturanForm($('view-content'));
+            }
+        }
+        
+        function updateTanggalPenetapanManual(newDateStr) {
+            appState.generator.tanggalPenetapan = newDateStr;
+            const newDay = new Date(newDateStr).getDate();
+            if (appState.generator.tanggalAkhirJurnal < newDay) {
+                appState.generator.tanggalAkhirJurnal = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
+            }
+            updateJournalEntriesRange();
+            saveState();
+            renderPengaturanForm($('view-content'));
+        }
+
+        function updateJournalEntriesRange() {
+            const jKey = getJournalKey();
+            const bln = appState.generator.bulan;
+            const thn = appState.generator.tahun;
+            const startDay = appState.generator.tanggalAwalJurnal || 1;
+            const endDay = appState.generator.tanggalAkhirJurnal || new Date(thn, bln, 0).getDate();
+            let oldEntries = appState.jurnalEntries[jKey] || [];
+            let newEntries = generateJournalDays(bln, thn, startDay, endDay);
+            const merged = newEntries.map(newRow => {
+                const existing = oldEntries.find(o => o.isoDate === newRow.isoDate && !o.isSubRow);
+                return existing ? { ...newRow, materi: existing.materi, jp: existing.jp, kelas: existing.kelas, hadir: existing.hadir, tidakHadir: existing.tidakHadir, totalSiswa: existing.totalSiswa, masalah: existing.masalah, foto: existing.foto, keterangan: existing.keterangan } : newRow;
+            });
+            
+            appState.jurnalEntries[jKey] = merged;
+            saveState();
+            if(activeDocType === 'jurnal' || activeDocType === 'absen' || activeDocType === 'cover') renderDocumentPreview();
+        }
+
+        function buildJurnalCalendarHTML() {
+            const y = appState.generator.tahun;
+            const m = appState.generator.bulan - 1;
+            const startDay = appState.generator.tanggalAwalJurnal || 1;
+            const endDay = appState.generator.tanggalAkhirJurnal || new Date(y, m + 1, 0).getDate();
+            
+            const firstDayIndex = new Date(y, m, 1).getDay(); 
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            
+            let html = '<div class="grid grid-cols-7 gap-1.5 text-center text-[13px] mt-4">';
+            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            days.forEach(d => html += `<div class="text-slate-400 font-semibold py-1">${d}</div>`);
+            
+            for(let i=0; i<firstDayIndex; i++) html += `<div></div>`;
+            
+            for(let d=1; d<=daysInMonth; d++) {
+                let classes = "py-2 rounded-lg cursor-pointer transition-all duration-200 flex items-center justify-center ";
+                
+                if (d === startDay || d === endDay) {
+                    classes += "bg-blue-600 text-white font-bold shadow-md transform scale-105";
+                } else if (d > startDay && d < endDay) {
+                    classes += "bg-blue-100 text-blue-800 font-semibold";
+                } else {
+                    classes += "bg-slate-50 text-slate-700 hover:bg-slate-200 font-medium border border-slate-100";
+                }
+                html += `<div class="${classes}" onclick="handleJurnalCalendarClick(${d})">${d}</div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function buildHadirMonthGridHTML() {
+            const gen = appState.generator;
+            const startM = parseInt(gen.bulanAwalHadir) || parseInt(gen.bulan) || 1;
+            const endM = parseInt(gen.bulanAkhirHadir) || startM;
+            const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+            
+            let html = '<div class="grid grid-cols-3 gap-2.5 mt-4">';
+            months.forEach((name, idx) => {
+                const m = idx + 1;
+                let classes = "py-3 rounded-lg text-sm font-semibold transition-all duration-200 text-center flex items-center justify-center cursor-pointer ";
+                if (m >= startM && m <= endM) {
+                    classes += (m === startM || m === endM) 
+                        ? "bg-emerald-600 text-white shadow-md transform scale-105" 
+                        : "bg-emerald-200 text-emerald-800 border-emerald-200";
+                } else {
+                    classes += "bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-100";
+                }
+                html += `<div class="${classes}" onclick="handleHadirMonthClick(${m})">${name}</div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+        
+        function renderFormSekolah(container) {
+            container.innerHTML = `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-building mr-2 text-primary"></i> Identitas Sekolah</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${createInputGroup('Nama Sekolah', 'text', 'sekolah', 'nama', 2)}${createInputGroup('NPSN', 'text', 'sekolah', 'npsn')}${createInputGroup('NSS', 'text', 'sekolah', 'nss')}${createInputGroup('Email', 'email', 'sekolah', 'email')}${createInputGroup('Telepon', 'text', 'sekolah', 'telepon')}</div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-map-location-dot mr-2 text-primary"></i> Alamat Sekolah</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${createInputGroup('Alamat Lengkap (Jalan)', 'text', 'sekolah', 'alamat', 2)}${createInputGroup('Desa / Kelurahan', 'text', 'sekolah', 'desa')}${createInputGroup('Kecamatan', 'text', 'sekolah', 'kecamatan')}${createInputGroup('Kabupaten / Kota', 'text', 'sekolah', 'kabupaten')}${createInputGroup('Provinsi', 'text', 'sekolah', 'provinsi')}${createInputGroup('Kode Pos', 'text', 'sekolah', 'kodepos')}</div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-user-tie mr-2 text-primary"></i> Data Kepala Sekolah</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${createInputGroup('Nama Kepala Sekolah (Beserta Gelar)', 'text', 'sekolah', 'kepsekNama')}${createInputGroup('NIP', 'text', 'sekolah', 'kepsekNip')}${createInputGroup('NUPTK', 'text', 'sekolah', 'kepsekNuptk')}${createInputGroup('Pangkat', 'text', 'sekolah', 'kepsekPangkat')}${createInputGroup('Golongan', 'text', 'sekolah', 'kepsekGolongan')}</div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-images mr-2 text-primary"></i> Aset Visual (Kop & Pengesahan)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">${createFileGroup('Logo Kiri (Pemprov)', 'sekolah', 'logoKiri')}${createFileGroup('Logo Kanan (Sekolah)', 'sekolah', 'logoKanan')}</div>
+            </div>`;
+        }
+        
+        function renderFormGuru(container) {
+            let tbody = appState.guru.map((g, idx) => `<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors"><td class="p-3 text-sm text-center text-slate-500 align-top">${idx + 1}</td><td class="p-3 text-sm font-medium text-slate-800 align-top"><div class="mb-1">${g.nama || 'Belum ada nama'}</div><div class="text-xs text-slate-500 font-normal">NIP. ${g.nip || '-'}</div><div class="text-xs text-slate-500 font-normal">NUPTK. ${g.nuptk || '-'}</div></td><td class="p-3 text-sm text-slate-600 align-top"><div class="font-medium text-slate-700">${g.status || '-'}</div>${g.golongan || g.pangkat ? `<div class="text-xs text-slate-500">${g.pangkat || ''} ${g.golongan ? '('+g.golongan+')' : ''}</div>` : ''}</td><td class="p-3 text-sm text-slate-600 align-top">${g.tugasTambahan || '-'}</td><td class="p-3 text-sm text-slate-600 align-top">${g.mapel || '-'}</td></tr>`).join('');
+            container.innerHTML = `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4 gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-users mr-2 text-primary"></i> Daftar Guru / Pegawai</h3>
+                        <p class="text-sm text-slate-500 mt-1">Berikut adalah daftar data guru yang terdaftar dalam sistem.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 w-12 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">No</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama & NIP / NUPTK</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Tugas Tambahan</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Mata Pelajaran</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tbody}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        }
+        
+        function renderFormPengawas(container) {
+            container.innerHTML = `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4 gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-users mr-2 text-primary"></i> Daftar Guru / Pegawai</h3>
+                        <p class="text-sm text-slate-500 mt-1">Berikut adalah daftar data guru yang terdaftar dalam sistem.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 w-12 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">No</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama & NIP / NUPTK</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Tugas Tambahan</th>
+                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Mata Pelajaran</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tbody}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        }
+
+        function renderPengaturanForm(container) {
+            const bulanOptions = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+                .map((b, i) => `<option value="${i+1}" ${appState.generator.bulan == i+1 ? 'selected' : ''}>${b}</option>`).join('');
+            const tahunOptions = [2026, 2027, 2028, 2029, 2030].map(t => `<option value="${t}" ${appState.generator.tahun == t ? 'selected' : ''}>${t}</option>`).join('');
+            const guruOptions = appState.guru.map(g => `<option value="${g.id}" ${appState.activeGuruId == g.id ? 'selected' : ''}>${g.nama}</option>`).join('');
+            
+            const mm = String(appState.generator.bulan).padStart(2, '0');
+            const maxDays = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
+            const minDate = `${appState.generator.tahun}-${mm}-01`;
+            const maxDate = `${appState.generator.tahun}-${mm}-${maxDays}`;
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-6 mt-4">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6 border-b pb-3 flex items-center"><i class="fa-solid fa-gear text-primary mr-2"></i> Pengaturan Parameter Laporan</h3>
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Pilih Guru</label>
+                        <select onchange="appState.activeGuruId = parseInt(this.value); saveState(); renderPengaturanForm($('view-content'));" class="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-base bg-blue-50/60 font-bold text-primary cursor-pointer">${guruOptions.length ? guruOptions : '<option disabled selected>Belum ada data guru</option>'}</select>
+                        <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i> Semua dokumen akan di-generate menggunakan data dari guru yang dipilih di sini.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-2">Bulan Laporan</label><select onchange="updateState('generator', 'bulan', this.value); renderPengaturanForm($('view-content'));" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">${bulanOptions}</select></div>
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-2">Tahun Laporan</label><select onchange="updateState('generator', 'tahun', this.value); renderPengaturanForm($('view-content'));" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">${tahunOptions}</select></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-2">Nomor Surat SPTJM / Lampiran</label><input type="text" id="input-no-sptjm" value="${appState.generator.nomorSurat}" oninput="updateState('generator', 'nomorSurat', this.value);" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"></div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Tanggal Surat SPTJM</label>
+                            <input type="date" id="input-tanggal-penetapan" value="${appState.generator.tanggalPenetapan}" min="${minDate}" max="${maxDate}" onchange="updateTanggalPenetapanManual(this.value);" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">
+                            <p class="text-[10px] text-slate-500 mt-1">Hanya menampilkan hari pada bulan berjalan.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pt-4 border-t border-slate-100">
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <h4 class="font-bold text-slate-800 flex items-center"><i class="fa-regular fa-calendar-days text-primary mr-2"></i> Rentang Tanggal Jurnal (${getNamaBulan(appState.generator.bulan)})</h4>
+                            <p class="text-xs text-slate-500 mt-1 mb-2 pb-3 border-b border-slate-100">Klik 1x untuk tanggal awal, klik 2x untuk tanggal akhir laporan.</p>
+                            ${buildJurnalCalendarHTML()}
+                        </div>
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <h4 class="font-bold text-slate-800 flex items-center"><i class="fa-regular fa-calendar-check text-emerald-600 mr-2"></i> Rentang Bulan Daftar Hadir</h4>
+                            <p class="text-xs text-slate-500 mt-1 mb-2 pb-3 border-b border-slate-100">Pilih range bulan untuk membuat Daftar Hadir secara otomatis.</p>
+                            ${buildHadirMonthGridHTML()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* Update Editor Baris Jurnal (1): Tambah Baris Utama di atas tabel & Toggle Libur di kolom aksi */
+        function renderJurnalEditorForm(container) {
+            const entries = getActiveJournalEntries();
+            let displayNoSetting = 1; let journalEditorRows = '';
+            for (let i = 0; i < entries.length; i++) {
+                let row = entries[i];
+                if (!row.isSubRow) {
+                    let rowSpan = 1;
+                    for (let j = i + 1; j < entries.length; j++) { if (entries[j].isSubRow) rowSpan++; else break; }
+                    journalEditorRows += `<tr class="border-b border-slate-200 hover:bg-slate-50 text-xs">
+                        <td rowspan="${rowSpan}" class="p-2 text-center font-semibold text-slate-600 border-r border-slate-200 align-top pt-3" style="vertical-align:middle">${displayNoSetting++}</td>
+                        <td rowspan="${rowSpan}" class="p-2 font-medium text-slate-700 whitespace-nowrap border-r border-slate-200 align-top pt-3" style="vertical-align:middle">${row.tanggal}</td>
+                        <td class="p-2 text-center border-l border-slate-100">
+                            <div class="flex items-center justify-center space-x-1.5">
+                                <button onclick="toggleHolidayRow(${i})"
+                                    class="px-2.5 py-1 ${
+                                        row.isHoliday
+                                            ? 'bg-red-600 text-white hover:bg-red-700'
+                                            : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-300'
+                                    } rounded font-semibold transition-colors shadow-sm text-[10px]"
+                                    title="Toggle Libur">
+
+                                    <i class="fa-solid ${row.isHoliday ? 'fa-umbrella-beach' : 'fa-calendar-plus'} mr-1"></i>
+                                    ${row.isHoliday ? 'Libur' : 'Efektif'}
+                                </button>
+
+                                <button onclick="addJournalSubRow(${i})" class="px-2 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded border border-indigo-200 font-semibold transition-colors shadow-sm text-[10px]" title="Tambah Sub Baris (Merge Tanggal)"><i class="fa-solid fa-plus"></i>Baris</button>
+                                <button onclick="deleteJournalRow(${i})" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded border border-rose-200 font-semibold transition-colors shadow-sm text-[10px]" title="Hapus Baris"><i class="fa-solid fa-trash-can"></i>Hapus</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                } else {
+                    journalEditorRows += `<tr class="border-b border-slate-200 bg-indigo-50/20 text-xs">
+                        <td class="p-2 text-center border-l border-slate-100">
+                            <div class="flex items-center justify-center space-x-2">
+                                <span class="text-[10px] text-slate-400 font-medium italic mr-2"><i class="fa-solid fa-level-up-alt rotate-90 mr-1"></i>Sub-baris lanjutan</span>
+                                <button onclick="deleteJournalRow(${i})" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded border border-rose-200 font-semibold transition-colors shadow-sm text-[10px]" title="Hapus Sub Baris"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+            }
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 mb-5 mt-2">
+                    <div class="flex flex-col xl:flex-row xl:justify-between xl:items-center mb-4 space-y-3 xl:space-y-0">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center"><i class="fa-solid fa-list-check text-primary mr-2"></i> Editor Baris Jurnal</h3>
+                            <p class="text-xs text-slate-500 mt-1">Atur baris jurnal untuk bulan yang dipilih.</p>
+                        </div>
+                        <!-- Tombol Tambah Baris Utama Dipindahkan ke Atas Tabel -->
+                        <div class="flex space-x-2">
+                            <button onclick="addNewMainRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm flex items-center">
+                                <i class="fa-solid fa-plus mr-1.5"></i> Tambah Hari
+                            </button>
+                            <button onclick="resetJournalRows()" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors border border-rose-200 shadow-sm flex items-center">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg max-h-[70vh] overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 bg-slate-100 z-10 shadow-sm">
+                                <tr class="text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-2.5 text-center w-10 border-b border-r border-slate-200">No</th>
+                                    <th class="p-2.5 border-b border-r border-slate-200">Tanggal</th>
+                                    <th class="p-2.5 text-center w-48 border-b border-slate-200">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${journalEditorRows.length ? journalEditorRows : '<tr><td colspan="3" class="text-center py-6 text-slate-500 text-xs italic">Jurnal kosong untuk bulan ini.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setPreviewDoc(docType) {
+            activeDocType = docType;
+            renderDocumentPreview();
+        }
+        
+        function renderDocumentPreview() {
+            const target = $('doc-render-target');
+            if (!target) return;
+            if (activeDocType === 'cover') {
+                target.innerHTML = getDocCover();
+            } else if (activeDocType === 'sptjm') {
+                target.innerHTML = getDocSPTJM();
+            } else if (activeDocType === 'absen') {
+                target.innerHTML = getDocHadir();
+            } else if (activeDocType === 'jurnal') {
+                target.innerHTML = getDocJurnal();
+            }
+        }
+        
+        function changeZoom(delta) {
+            currentZoom = Math.max(0.5, Math.min(2.0, currentZoom + delta));
+            $('zoom-level').innerText = Math.round(currentZoom * 100) + '%';
+            $('doc-render-target').style.transform = `scale(${currentZoom})`;
+        }
+        
+        function getHeaderHTML(type = 'sptjm') {
+            const s = appState.sekolah;
+            const logoL = s.logoKiri ? `<img src="${s.logoKiri}" class="doc-logo" style="display: inline; vertical-align:middle; text-align: center; object-fit:contain;" width="100" height="100">` : '';
+            const logoR = s.logoKanan ? `<img src="${s.logoKanan}" class="doc-logo" style="display: inline; vertical-align:middle; text-align: center; object-fit:contain;" width="100" height="100">` : '';
+            const jLogoL = s.logoKiri ? `<img src="${s.logoKiri}" class="doc-logo" style="display: inline; vertical-align:middle; text-align: center; object-fit:contain;" width="150" height="150">` : '';
+            const jLogoR = s.logoKanan ? `<img src="${s.logoKanan}" class="doc-logo" style="display: inline; vertical-align:middle; text-align: center; object-fit:contain;" width="150" height="150">` : '';
+            const extraLogo = (type !== 'sptjm') ? `<td style="width: 25%; text-align: center;">${logoR}</td>` : ``;
+
+            if (type === 'sptjm'){
+            return `
+            <table style="font-family: 'Arial'; width: 100%; border-bottom: 1pt solid #000; margin-bottom: 3px;">
+                <tr>
+                    <td style="width: 14%; text-align: center;">${logoL}</td>
+                    <td style="width: 72%; text-align: center; padding: 0 10px; padding-bottom: 5px;">
+                        <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">PEMERINTAH PROVINSI ${(s.provinsi || '').toUpperCase()}</div>
+                        <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
+                        <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
+                        <div style="font-size: 7pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
+                        <div style="font-size: 7pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                    </td><td style="width: 14%; text-align: center;"></td>
+                </tr>
+            </table><br>`;
+            }else if (type === 'jurnal'){
+            return `
+            <table style="width: 100%; border-bottom: 5pt double #000; margin-bottom: 3px;">
+                <tr>
+                    <td style="width: 25%; text-align: right;">${jLogoL}</td>
+                    <td style="width: 50%; text-align: center; padding: 0 10px; padding-bottom: 5px;">
+                        <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">PEMERINTAH PROVINSI ${(s.provinsi || '').toUpperCase()}</div>
+                        <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
+                        <div style="font-size: 20pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
+                        <div style="font-size: 10pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
+                        <div style="font-size: 10pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                    </td>
+                    <td style="width: 25%; text-align: left;">${jLogoR}</td>
+                </tr>
+            </table>`;
+            }else {
+                return `
+                <table style="width: 100%; border-bottom: 5pt double #000; margin-bottom: 3px;">
+                    <tr>
+                        <td style="width: 14%; text-align: center;">${logoL}</td>
+                        <td style="width: 72%; text-align: center; padding: 0 10px; padding-bottom: 5px;">
+                            <div style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">PEMERINTAH PROVINSI ${(s.provinsi || '').toUpperCase()}</div>
+                            <div style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
+                            <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
+                            <div style="font-size: 9pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
+                            <div style="font-size: 9pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                        </td>${extraLogo}
+                    </tr>
+                </table>`;
+            }
+        }
+        
+        function getDocCover() {
+            const s = appState.sekolah, g = getActiveGuru(), gen = appState.generator;
+            const startDay = new Date(gen.tanggalPenetapan).getDate();
+            const endDay = gen.tanggalAkhirJurnal || new Date(gen.tahun, gen.bulan, 0).getDate();
+            const namaBulan = getNamaBulan(gen.bulan);
+            
+            const cover1 = `
+                <div class="f4-sheet SectionPortrait">${getHeaderHTML('cover')}
+                    <div class="doc-body" style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 1000px; padding: 20px 40px; font-family: 'Times New Roman';">
+                        <div style="font-family: 'Cambria'; font-size: 20pt; font-weight: bold; margin-top: 40px; text-align: center; margin-bottom: 15px;">BERKAS</div>
+                        <br>
+                        <div style="font-family: margin:0; pading: 0; 'Cambria'; font-size: 16pt; font-weight: bold; text-align: center;">PENERIMA TUNJANGAN PROFESI GURU (TPG)</div>
+                        <div style="font-family: 'Cambria'; margin:0; pading: 0; font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 60px;">BULAN ${getNamaBulan(gen.bulan).toUpperCase()}</div>
+                        <table style="width: 100%; max-width: 600px; margin: 0 auto; font-size: 11pt; border-collapse: separate; border-spacing: 0 15px;">
+                            <tr style="padding : 0 5pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 40%; font-weight: bold; vertical-align: center;">NAMA GURU</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 5%; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 55%; font-weight: bold;">${g.nama}</td>
+                            </tr>
+                            <tr style="height: 40pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NIP</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nip || '-'}</td>
+                            </tr>
+                            <tr style="height : 40pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NUPTK</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nuptk || '-'}</td>
+                            </tr>
+                            <tr style="height: 40pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NRG</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nrg || '-'}</td>
+                            </tr>
+                            <tr style="height: 40pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NPWP</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.npwp || '-'}</td>
+                            </tr>
+                            <tr style="height: 40pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NOMOR REKENING / BANK</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.norek || '-'} / ${g.bank || '-'}</td>
+                            </tr>
+                            <tr style="height: 40pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NAMA SEKOLAH</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${s.nama}</td>
+                            </tr>
+                            <tr style="height: 40pt">
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">ALAMAT SEKOLAH</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${s.alamat || ''}, ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>`;
+            const bgLogoUrl = s.logoKanan || '';
+            const cover2 = `<div class="f4-landscape SectionLandscape" style="padding: 15px; position: relative; width: 100%; min-height: 609.4488pt; max-height: 100%; box-sizing: border-box; background: #ffffff; overflow: hidden;">
+                ${bgLogoUrl ? `
+                <!--[if gte mso 9]>
+                <v:rect id="WatermarkWord" style="position:absolute; width:340pt; height:340pt; z-index:-10; mso-position-horizontal:center; mso-position-horizontal-relative:page; mso-position-vertical:center; mso-position-vertical-relative:page;" stroked="f">
+                    <v:fill src="${bgLogoUrl}" type="frame" opacity="13%" />
+                </v:rect>
+                <![endif]-->
+                ` : ''}
+                ${bgLogoUrl ? `
+                <![if !mso]>
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 1; pointer-events: none;">
+                    <img src="${bgLogoUrl}" style="width: 38%; max-height: 60%; opacity: 0.13; object-fit: contain;">
+                </div>
+                <![endif]>
+                ` : ''}
+                <table style="width: 100%; height: 100%; border-collapse: collapse; border: 3.5pt solid #5b21b6; border-left: 7pt solid #5b21b6; border-right: 7pt solid #5b21b6; table-layout: fixed; position: relative; z-index: 2;">
+                    <tr>
+                        <td style="padding: 4px; vertical-align: center;">
+                            <table style="width: 100%; height: 100%; border-collapse: collapse; border: 1.8pt solid #1d4ed8; table-layout: fixed;">
+                                <tr>
+                                    <td style="padding: 0.25in 0.4in; vertical-align: center; background: transparent;">
+                                        <table style="width: 100%; border-bottom: 5pt double #000; margin-bottom: 3px;">
+                                            <tr>
+                                                <td style="width: 20%; text-align: center; vertical-align: middle; padding-bottom: 8px;">
+                                                    ${s.logoKiri ? `<img src="${s.logoKiri}" class="doc-logo" style="object-fit:contain;" width="150" height="150">` : ''}
+                                                </td>
+                                                <td style="width: 60%; text-align: center; vertical-align: middle; padding: 0 10px 8px 10px;">
+                                                    <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">PEMERINTAH PROVINSI ${(s.provinsi || '').toUpperCase()}</div>
+                                                    <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
+                                                    <div style="font-size: 20pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
+                                                    <div style="font-size: 10pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
+                                                    <div style="font-size: 10pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                                                </td>
+                                                <td style="width: 20%; text-align: center; vertical-align: middle; padding-bottom: 8px;">
+                                                    ${s.logoKanan ? `<img src="${s.logoKanan}" class="doc-logo" style="object-fit:contain;" width="150" height="150">` : ''}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    
+                                        <div style="text-align: center; margin: 30pt 0;">
+                                            <div style="margin-bottom: 0; font-size: 25pt; font-weight: 900; font-family: 'Arial Black', Impact, sans-serif; letter-spacing: 0.5px; color: #000;">LAPORAN KEGIATAN PEMBELAJARAN</div>
+                                            <div style="margin-top: 0; font-size: 21pt; font-family: 'Arial', sans-serif; color: #000;">${startDay} ${namaBulan} s/d ${endDay} ${namaBulan} ${gen.tahun}</div>
+                                        </div>
+                                        <div style="margin: 20px auto; width: 75%; max-width: 650px;">
+                                            <table style="width: 100%; font-size: 14.5pt; font-family: 'Arial', sans-serif;">
+                                                <tr style="height: 40pt">
+                                                    <td style="width: 38%; color: #000;">NAMA</td>
+                                                    <td style="width: 4%; text-align: center; color: #000;">:</td>
+                                                    <td style="width: 58%; font-weight: bold; color: #000;">${g.nama}</td>
+                                                </tr>
+                                                <tr style="height: 40pt">
+                                                    <td style="color: #000;">NIP</td>
+                                                    <td style="text-align: center; color: #000;">:</td>
+                                                    <td style="font-weight: bold; color: #000;">${g.nip || '-'}</td>
+                                                </tr">
+                                                <tr style="height: 40pt">
+                                                    <td style="color: #000;">NUPTK</td>
+                                                    <td style="text-align: center; color: #000;">:</td>
+                                                    <td style="font-weight: bold; color: #000;">${g.nuptk || '-'}</td>
+                                                </tr>
+                                                <tr style="height: 40pt">
+                                                    <td style="color: #000;">MATA PELAJARAN</td>
+                                                    <td style="text-align: center; color: #000;">:</td>
+                                                    <td style="font-weight: bold; color: #000;">${g.mapel || '-'}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div style="text-align: center; margin-top: 40pt; margin-bottom 8pt; font-size: 16pt; font-weight: bold; font-family: 'Arial', sans-serif; color: #000;">
+                                            TAHUN ${gen.tahun}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>`;
+            return cover1 + `\n<br clear="all" class="word-section-break" style="page-break-before:always; mso-break-type:section-break;" />\n` + cover2;
+            
+        }
+
+        function getDocSPTJM() {
+            const s = appState.sekolah, g = getActiveGuru(), gen = appState.generator;
+            const sptjmContent = `
+            <div class="f4-sheet SectionPortrait" style="font-family:'Arial'";>${getHeaderHTML('sptjm')}
+                <div class="doc-body">
+                    <div style="text-align: center; font-weight: bold; font-size: 11pt; text-decoration: underline;">SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK</div>
+                    <div style="text-align: center; margin-bottom: 20px; font-size: 11pt;">Nomor : ${gen.nomorSurat}</div>
+                    <p style="margin-bottom: 15px;">${dateToFullIndoWords(gen.tanggalPenetapan)}</p>
+                    <table class="info-table" style="font-family:'Arial'; width:100%; margin-left: 35pt; margin-bottom: 10px; font-size: 11pt;">
+                        <tr>
+                            <td style="width: 32%; font-weight:bold;">Nama</td>
+                            <td style="width: 2%; text-align: center"><b>:</b></td>
+                            <td style="width: 66%;"><b>${s.kepsekNama}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">NIP</td>
+                            <td><b>:</b></td>
+                            <td><b>${s.kepsekNip}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Pangkat / Golongan</td>
+                            <td><b>:</b></td>
+                            <td><b>${s.kepsekPangkat} / ${s.kepsekGolongan}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">NUPTK</td>
+                            <td><b>:</b></td>
+                            <td><b>${s.kepsekNuptk}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Jabatan</td>
+                            <td><b>:</b></td>
+                            <td><b>Kepala Sekolah</b></td>
+                        </tr>
+                    </table>
+                    <p style="margin-bottom: 15px;">Dengan ini menyatakan bahwa &emsp;&emsp;&emsp;:</p>
+                    <table class="info-table" style="font-family:'Arial'; width:100%; margin-left: 35pt; margin-bottom: 10px; font-size: 11pt;">
+                        <tr>
+                            <td style="width: 32%; font-weight: bold;">Nama</td>
+                            <td style="width: 2%; text-align: center"><b>:</b></td>
+                            <td style="width: 66%; font-weight: bold;"><b>${g.nama || '-'}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Jabatan</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.jabatan || '-'}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">NIP</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.nip || '-'}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Pangkat / Golongan</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.golongan || '-'}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">NUPTK</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.nuptk || '-'}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Bidang Studi</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.bidangStudi || '-'}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Jumlah jam mengajar</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.jamMengajar || '0'} jam</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Jumlah Jam Tugas Tambahan</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.jamTambahan || '0'} jam</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Jumlah Beban Kerja</td>
+                            <td><b>:</b></td>
+                            <td><b>${g.bebanKerja || '0'} Jam</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Unit Kerja</td>
+                            <td><b>:</b></td>
+                            <td><b>${s.nama}</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; vertical-align: top;">Alamat</td>
+                            <td style="vertical-align: top;"><b>:</b></td>
+                            <td><b>${s.alamat || '-'}, Desa ${s.desa || '-'}, <br> Kec. ${s.kecamatan || '-'}, Kab. ${s.kabupaten || '-'}</b></td>
+                        </tr>
+                    </table>
+                    <p style="margin-top: 15px; text-align: left;">Saudara tersebut diatas termasuk dalam <i>Lampiran Penerima Tunjangan Profesi Guru PNS, PPPK, <br>
+                    dan Non PNS</i> dan <b><u>LAYAK</u> Menerima Tunjangan Profesi Guru Bulan ${getNamaBulan(gen.bulan)} Tahun ${gen.tahun}</b><br>
+                    karena telah melaksanakan tugas sesuai :</p>
+                    <ol style="font-family:'Arial'; margin-top: 5px; margin-bottom: 15px; padding-left: 40px; text-align: left; list-style-type: decimal;">
+                        <li>UU No. 14 Tahun 2005 Tentang Guru dan Dosen</li>
+                        <li>PP 74 Tahun 2008 Tentang Guru dan</li>
+                        <li>Peraturan Menteri Pendidikan Dasar dan Menengah Nomor 4 tahun 2025 tentang petunjuk <br>
+                        teknis Pemberian Tunjangan Guru ASN Daerah.</li>
+                    </ol>
+                    <p style="text-align: left; margin: 0; padding: 0;">Apabila data tersebut tidak sesuai dengan kenyataan, maka saya bersedia menanggung resiko <br>
+                    baik terhadap diri saya sendiri maupun resiko yang menyebabkan kerugian negara.</p>
+                    <p style="text-align: left; margin: 0; padding: 0; ">Demikian Surat Pernyataan Tanggung Jawab Mutlak ini saya buat dengan sebenar-benarnya <br>
+                    untuk digunakan sebagaimana mestinya.</p><br><br><br>
+                    <table class="doc-signatures">
+                        <tr>
+                            <td style="width: 55%;"></td>
+                            <td style="width: 45%; text-align: center;">
+                                <div style="font-family:'Arial'; style="font-size: 12pt; font-weight: bold; margin-bottom: 15px;">Kepala Sekolah,</div>
+                                <div class="doc-sign-box" margin-top: 15px;">
+                                    ${s.capSekolah ? `<img src="${s.capSekolah}" class="doc-cap-img" style="left: 40px;">` : ''}
+                                    ${s.ttdKepsek ? `<img src="${s.ttdKepsek}" class="doc-sign-img">` : ''}
+                                    <br><br><br><br>
+                                    <div class="doc-sign-name" style="font-family:'Arial'; style="font-size: 12pt; font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${s.kepsekNama}</div>
+                                    <div class="doc-sign-nip" style="font-family:'Arial'; style="font-size: 12pt; font-weight: bold; margin: 0; padding: 0">NIP. ${s.kepsekNip}</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>`;
+        const lampiranContent = `\n<br clear="all" class="word-section-break" style="page-break-before:always; mso-break-type:section-break;" />\n` + getDocLampiran();
+        return sptjmContent + lampiranContent;
+        }
+        
+        function getDocLampiran() {
+            const s = appState.sekolah, gen = appState.generator, activeGuru = getActiveGuru();
+            let rows = appState.guru.map((g, i) => {
+                const isActive = (g.id === activeGuru.id);
+                const bgAttr = isActive ? 'style="background-color: #d0e3f0;" bgcolor="#d0e3f0"' : '';
+                return `
+                <tr ${bgAttr}>
+                    <td>${i + 1}.</td>
+                    <td style="height: 30pt; text-align: left; padding-left: 8px;">${g.nama}</td>
+                    <td>${g.nip || '-'}</td>
+                    <td>${g.nuptk || '-'}</td>
+                    <td>${g.nopesSertifikasi || '-'}</td>
+                    <td>${g.nrg || '-'}</td>
+                    <td>${g.bank || '-'}</td>
+                    <td>${g.norek || '-'}</td>
+                    <td>${g.bidang || '-'}</td>
+                </tr>`;
+                }).join('');
+            return `
+            <div class="f4-landscape SectionLandscape" style="font-family:'Arial';">
+                <div class="doc-body doc-body-jurnal">
+                    <div style="text-align: center; font-style: italic; font-size: 11pt; margin-bottom: 2px;">Lampiran Penerima Tunjangan Profesi Guru PNS, PPPK, Dan Non PNS</div>
+                    <div style="text-align: center; font-size: 11pt; margin-bottom: 2px;">Bulan ${getNamaBulan(gen.bulan)} Tahun ${gen.tahun}</div>
+                    <div style="text-align: center; font-size: 11pt; margin-bottom: 2px;">${s.nama}</div>
+                    <div style="text-align: center; font-style: italic; font-size: 11pt; margin-bottom: 20px;">Nomor : ${gen.nomorSurat}</div>
+                    <table class="doc-table" style="font-family:'Arial'; font-size: 9pt;">
+                        <thead>
+                            <tr style="height: 30pt;">
+                                <th style="width: 3%;">NO</th>
+                                <th style="width: 20%;">NAMA GURU</th>
+                                <th style="width: 14%;">NIP</th>
+                                <th style="width: 12%;">NUPTK</th>
+                                <th style="width: 15%;">NOPES SERTIFIKASI</th>
+                                <th style="width: 10%;">NRG</th>
+                                <th style="width: 8%;">BANK</th>
+                                <th style="width: 10%;">NOREK</th>
+                                <th style="width: 8%;">MAPEL</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                    <br>
+
+                    <div style="font-size: 11pt;">
+                        <div>Keterangan</div>
+                        <!--[if mso]>
+                        <ol style="font-family:'Arial'; font-size: 11pt; text-align: justify; list-style-type: decimal; margin-left: 21pt;">
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt; margin-top: 2pt">ATPH <span style="mso-tab-count:1;">&#xa0;</span>Agribisnis Tanaman Pangan dan Hortikultura</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt">PJOK <span style="mso-tab-count:1;">&#xa0;</span>Pendidikan Jasmani Olahraga dan Kesehatan</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt">APHP <span style="mso-tab-count:1">&#xa0;</span>Agribisnis Pengolahan Hasil Pertanian</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">PIPAS <span style="mso-tab-count:1">&#xa0;</span>Projek Ilmu Pengetahuan Alam dan Sosial</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">AKL <span style="mso-tab-count:2">&#xa0;</span>Akuntansi dan Keuangan Lembaga</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">PABP <span style="mso-tab-count:1">&#xa0;</span>Pendidikan Agama dan Budi Pekerti</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">TKJ <span style="mso-tab-count:2">&#xa0;</span>Teknik Komputer dan Jaringan</li>
+                        </ol>
+                        <![endif]-->
+
+                        <!--[if !mso]><!-->
+                        <ol style="font-family:'Arial'; font-size: 11pt; text-align: justify; list-style-type: decimal; padding-left:1em;">
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt; margin-top: 2pt">ATPH <span style="mso-tab-count:1;">&#xa0;</span>Agribisnis Tanaman Pangan dan Hortikultura</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt">PJOK <span style="mso-tab-count:1;">&#xa0;</span>Pendidikan Jasmani Olahraga dan Kesehatan</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt">APHP <span style="mso-tab-count:1">&#xa0;</span>Agribisnis Pengolahan Hasil Pertanian</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">PIPAS <span style="mso-tab-count:1">&#xa0;</span>Projek Ilmu Pengetahuan Alam dan Sosial</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">AKL <span style="mso-tab-count:2">&#xa0;</span>Akuntansi dan Keuangan Lembaga</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">PABP <span style="mso-tab-count:1">&#xa0;</span>Pendidikan Agama dan Budi Pekerti</li>
+                            <li style="font-family:'Arial'; font-size: 11pt; tab-stops: 21pt;">TKJ <span style="mso-tab-count:2">&#xa0;</span>Teknik Komputer dan Jaringan</li>
+                        </ol>
+                        <!--<![endif]-->
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function getDocHadir() {
+            const s = appState.sekolah, g = getActiveGuru(), p = appState.pengawas, gen = appState.generator;
+            const rows = Array.from({length: 23}, (_, i) => `<tr><td>${i+1}.</td><td style="text-align:left;padding-left:5px;font-size:8pt;white-space:nowrap;"></td><td></td><td style="font-family:'Arial',cursive;font-size:12pt;"></td><td></td><td style="font-family:'Arial',cursive;font-size:12pt;"></td><td></td></tr>`).join('');
+            
+            let fullHtml = '';
+            const startM = parseInt(gen.bulanAwalHadir) || parseInt(gen.bulan) || 1;
+            const endM = parseInt(gen.bulanAkhirHadir) || startM;
+            for(let m = startM; m <= endM; m++) {
+                const monthName = getNamaBulan(m);
+                let pageHtml = `
+                <div class="f4-sheet SectionPortrait">${getHeaderHTML('absen')}
+                    <div class="doc-body"><br>
+                        <table class="info-table" style="width: 100%; font-weight: bold; font-size: 12pt;">
+                            <tr>
+                                <td style="width: 28%;">NAMA</td>
+                                <td style="width: 2%; text-align: center">:</td>
+                                <td style="width: 70%;">${g.nama}</td>
+                            </tr>
+                            <tr>
+                                <td>NIP</td>
+                                <td>:</td>
+                                <td>${g.nip || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td>PANGKAT / GOL</td>
+                                <td>:</td>
+                                <td>${g.pangkat || '-'} / ${g.golongan || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td>JABATAN</td>
+                                <td>:</td>
+                                <td>${g.jabatan || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td>STATUS</td>
+                                <td>:</td>
+                                <td>${g.status || '-'}</td>
+                            </tr>
+                        </table>
+                        <br>
+                        <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-top: 10px; margin-bottom: 10px; text-decoration: underline;">DAFTAR HADIR BULAN : ${monthName.toUpperCase()} ${gen.tahun}</div>
+                        <br>
+                        <table class="doc-table" style="margin-bottom: 20px;">
+                            <thead>
+                                <tr>
+                                <th rowspan="2" style="width: 5%;">NO</th>
+                                <th rowspan="2" style="width: 25%;">HARI / TGL</th>
+                                <th colspan="2" style="width: 25%;">MASUK</th>
+                                <th colspan="2" style="width: 25%;">PULANG</th>
+                                <th rowspan="2" style="width: 20%;">KET<br><span style="font-weight: normal; font-size: 11pt;">(Izin, Sakit, TB)</span></th>
+                                </tr>
+                                <tr>
+                                <th style="width: 12%;">JAM (Wita)</th>
+                                <th>TTD</th>
+                                <th style="width: 12%;">JAM (Wita)</th>
+                                <th>TTD</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                        <table class="doc-signatures">
+                            <tr>
+                                <td style="width: 50%; font-size: 12pt; text-align: center; padding-right: 20px;">
+                                    <div style="margin-bottom: 0;">Mengetahui :</div>
+                                    <div>Pengawas Bina,</div>
+                                    <div class="doc-sign-box" style="margin-top: 0;">${p.ttdPengawas ? `<img src="${p.ttdPengawas}" class="doc-sign-img">` : ''}
+                                    <br><br><br><br>
+                                    <div class="doc-sign-name" style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${p.nama}</div>
+                                    <div class="doc-sign-nip" style="font-weight: bold; margin: 0; padding: 0">NIP. ${p.nip}</div>
+                                    </div>
+                                </td>
+                                <br>
+                                <td style="width: 50%; font-size: 12pt; text-align: center; padding-left: 20px;">
+                                    <div style="margin-bottom: 0;">
+                                    ${gen.kotaPenetapan},&emsp;&emsp; ${monthName} ${gen.tahun}</div>
+                                    <div>Kepala Sekolah,</div>
+                                    <div class="doc-sign-box" style="margin-top: 0;">
+                                        ${s.capSekolah ? `<img src="${s.capSekolah}" class="doc-cap-img" style="left: 40px;">` : ''}
+                                        ${s.ttdKepsek ? `<img src="${s.ttdKepsek}" class="doc-sign-img">` : ''}
+                                        <br><br><br><br>
+                                        <div class="doc-sign-name" style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${s.kepsekNama}</div>
+                                        <div class="doc-sign-nip" style="font-weight: bold; margin: 0; padding: 0">NIP. ${s.kepsekNip}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>`;
+                if (m > startM) {
+                    fullHtml += `\n<br clear="all" class="word-section-break" style="page-break-before:always; mso-break-type:section-break;" />\n`;
+                }
+                fullHtml += pageHtml;
+            }
+            return fullHtml;
+        }
+
+        /* 2. KEBUTUHAN UPDATE 2: TANDA TANGAN PENGAWAS BINA BERADA DI BAGIAN TENGAH DI BAWAH GURU & KEPALA SEKOLAH */
+        function getDocJurnal() {
+            const s = appState.sekolah, g = getActiveGuru(), p = appState.pengawas, gen = appState.generator, entries = getActiveJournalEntries();
+            let displayNo = 1;
+            const rows = entries.map((r, i) => {
+                let noCell = '', tglCell = '';
+                const editable = (field, fallback='-') => `contenteditable="true" onblur="updateJournalRowFromPreview(${i}, '${field}', this)"`;
+                if (!r.isSubRow) {
+                    let tglDisplay = r.tanggal; const dObj = new Date(r.isoDate);
+                    if (!isNaN(dObj)) tglDisplay = `${["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"][dObj.getDay()]}, ${dObj.getDate().toString().padStart(2, '0')} ${getNamaBulan(dObj.getMonth() + 1)} `;
+                    let rowSpan = 1; while (entries[i + rowSpan]?.isSubRow) rowSpan++;
+                    noCell = `<td rowspan="${rowSpan}" style="text-align:center;vertical-align:middle;padding-top:5px;">${displayNo++}.</td>`;
+                    tglCell = `<td rowspan="${rowSpan}" style="text-align:left;font-size:11pt;vertical-align:middle;padding-top:5px;">${tglDisplay}</td>`;
+                }
+                if (r.isHoliday) return `
+                    <tr>${noCell}${tglCell}
+                        <td colspan="8" style="text-align:center;font-weight:bold;background-color:#ffe4e6;height: 60pt;color:red;letter-spacing:1px;" ${editable('materi')}>${r.materi}</td>
+                        <td style="color:red;font-weight:bold;text-align:center;" ${editable('keterangan')}>${r.keterangan || 'Libur'}</td>
+                    </tr>`;
+                
+                let imgCol = r.foto ? `
+                    <img src="${r.foto}" class="doc-logo" style="padding: 1pt; object-fit:contain; cursor:pointer;" width="100" height="80" onclick="$('upload-photo-${i}').click()" title="Ganti foto">` : 
+                    `<div class="upload-placeholder" style="font-size:8pt;color:#94a3b8;padding:15px;cursor:pointer;border:1px dashed #cbd5e1;border-radius:4px;" onclick="$('upload-photo-${i}').click()" title="Upload Foto">Upload</div>`;
+                return `
+                    <tr>${noCell}${tglCell}
+                        <td style="text-align:left;" ${editable('materi')}>${r.materi}</td>
+                        <td ${editable('jp')}>${r.jp || ''}</td>
+                        <td ${editable('kelas')}>${r.kelas || ''}</td>
+                        <td ${editable('hadir')}>${r.hadir || ''}</td>
+                        <td ${editable('tidakHadir')}>${r.tidakHadir || ''}</td>
+                        <td ${editable('totalSiswa')}>${r.totalSiswa || ''}</td>
+                        <td ${editable('masalah')}>${r.masalah || ''}</td>
+                        <td style="width:auto; height: 60pt; padding: 2px; text-align: center; vertical-align: middle;" >${imgCol}
+                        <input type="file" id="upload-photo-${i}" accept="image/*" style="display:none;" onchange="uploadPhotoFromPreview(event, ${i})"></td>
+                        <td ${editable('keterangan')}>${r.keterangan || ''}</td>
+                    </tr>`;
+            }).join('');
+
+            const jurnal = `
+                <div class="f4-landscape SectionLandscape">${getHeaderHTML('jurnal')}<br>
+                    <div class="doc-body doc-body-jurnal">
+                        <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-top: 10px; text-decoration: underline;">LAPORAN KEGIATAN PEMBELAJARAN</div>
+                        <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 15px;">BULAN : ${getNamaBulan(gen.bulan).toUpperCase()} ${gen.tahun}</div>
+                        <br>
+                        <table class="info-table" style="width: 100%; font-weight: bold; font-size: 12pt;">
+                            <tr>
+                                <td style="width: 20%;">NAMA</td>
+                                <td style="width: 2%; text-align: center">:</td>
+                                <td style="width: 78%">${g.nama}</td>
+                            </tr>
+                            <tr>
+                                <td>NIP</td>
+                                <td>:</td>
+                                <td>${g.nip || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td>TUGAS TAMBAHAN</td>
+                                <td>:</td>
+                                <td>${g.tugasTambahan || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td>STATUS</td>
+                                <td>:</td>
+                                <td>${g.status || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td>MAPEL</td>
+                                <td>:</td>
+                                <td>${g.mapel || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td>JUMLAH JAM</td>
+                                <td>:</td>
+                                <td>${g.bebanKerja || '0'} JP</td>
+                            </tr>
+                        </table>
+                        <br>
+                        <table class="doc-table">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" style="width: 3%;">No</th>
+                                    <th rowspan="2" style="width: 14%;">Hari/Tanggal</th>
+                                    <th rowspan="2" style="width: 20%;">Kegiatan/Materi</th>
+                                    <th rowspan="2" style="width: 9%;">Kelas/Jurusan</th>
+                                    <th rowspan="2" style="width: 9%;">Mapel/JP</th>
+                                    <th colspan="3" style="width: 17%;">Keadaan Siswa</th>
+                                    <th rowspan="2" style="width: 10%;">Masalah/Solusi</th>
+                                    <th rowspan="2" style="width: 9%;">Dokumentasi Pembelajaran</th>
+                                    <th rowspan="2" style="width: 9%;">Keterangan</th>
+                                </tr>
+                                <tr>
+                                    <th style="width: 5%;">Hadir</th>
+                                    <th style="width: 5%;">Tidak Hadir</th>
+                                    <th style="width: 5%;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+
+            const ttd = `
+                <!-- TANDA TANGAN LAPORAN MENGAJAR -->
+                <div class="f4-landscape SectionLandscape">
+                    <div class="doc-body doc-body-jurnal">
+                        <table class="doc-signatures" style="width: 100%; margin-top: 20px;">
+                            <tr>
+                                <td style="width: 50%; font-size: 12pt; text-align: center;">
+                                    <div style="margin: 0; padding: 0;"></div><br>
+                                    <div>Kepala Sekolah,</div>
+                                    <div class="doc-sign-box" style="font-size: 12pt; margin-top: 0;">
+                                        ${s.capSekolah ? `<img src="${s.capSekolah}" class="doc-cap-img" style="left: 40px;">` : ''}
+                                        ${s.ttdKepsek ? `<img src="${s.ttdKepsek}" class="doc-sign-img">` : ''}
+                                        <br><br><br><br>
+                                        <div class="doc-sign-name" style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${s.kepsekNama}</div>
+                                        <div class="doc-sign-nip" style="font-weight: bold; margin: 0; padding: 0">NIP. ${s.kepsekNip}</div>
+                                    </div>
+                                </td>
+                                <td style="width: 50%; font-size: 12pt; text-align: center;">
+                                    <div style="margin-bottom: 0;">
+                                    ${gen.kotaPenetapan},&emsp;&emsp; ${getNamaBulan(appState.generator.bulan)} ${gen.tahun}</div>
+                                    <div>Guru Mata Pelajaran,</div>
+                                    <div class="doc-sign-box" style="margin-top: 0;">
+                                        <br><br><br><br>
+                                        <div class="doc-sign-name" style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${g.nama}</div>
+                                        <div class="doc-sign-nip" style="font-weight: bold; margin: 0; padding: 0">NIP. ${g.nip || '-'}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Pengawas Bina Berada di Bagian Tengah di Bawah Guru & Kepala Sekolah -->
+                            <tr>
+                                <td colspan="2" style="font-size: 12pt; text-align: center; padding-top: 25px;">
+                                    <div style="margin-bottom: 0;">Mengetahui :</div>
+                                    <div>Pengawas Bina,</div>
+                                    <div class="doc-sign-box" style="margin-top: 0;">
+                                        ${p.ttdPengawas ? `<img src="${p.ttdPengawas}" class="doc-sign-img">` : ''}
+                                        <br><br><br><br>
+                                        <div class="doc-sign-name" style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${p.nama}</div>
+                                        <div class="doc-sign-nip" style="font-weight: bold; margin: 0; padding: 0">NIP. ${p.nip}</div>
+                                    </div>   
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>`
+
+            return jurnal + `\n<br clear="all" class="word-section-break" style="page-break-before:always; mso-break-type:section-break;" />\n` + ttd;
+            
+        }
+
+        /* 3. KEBUTUHAN UPDATE 3: LAPORAN MENGAJAR SAAT DIEXPORT KE WORD BERFORMAT LANDSCAPE */
+        function getPageStyleHelper() {
+            return `
+            @page SectionPortrait { 
+                size: 21cm 33cm;
+                mso-page-orientation: portrait; 
+                margin: 0.5cm 0.5cm 0.5cm 1cm; 
+                mso-header-margin: 0.5cm; 
+                mso-footer-margin: 0.5cm; 
+                mso-paper-source: 0; 
+            } 
+            div.SectionPortrait { 
+                page: SectionPortrait; 
+            } 
+            @page SectionLandscape { 
+                size: 33cm 21cm; 
+                mso-page-orientation: landscape; 
+                margin: 0.5cm 0.5cm 0.5cm 1cm; 
+                mso-header-margin: 0.5cm; 
+                mso-footer-margin: 0.5cm; 
+                mso-paper-source: 0; 
+            } 
+            div.SectionLandscape { 
+                page: SectionLandscape; 
+            }`;
+        }
+
+        function exportWord() {
+            const element = $('doc-render-target');
+            if(!element) return;
+            
+            const btn = $('btn-export-word');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1.5"></i> Memproses...';
+            btn.disabled = true;
+            
+            const g = getActiveGuru();
+            const fileName = `${activeDocType.toUpperCase()} ${getNamaBulan(appState.generator.bulan)} ${g.nama.split(',')[0].replace(/\s/g, ' ')}.doc`;
+            
+            const clone = element.cloneNode(true);
+            const placeholders = clone.querySelectorAll('.upload-placeholder, input[type="file"]');
+            placeholders.forEach(el => el.remove());
+            
+            const sectionDivs = clone.querySelectorAll('.SectionPortrait, .SectionLandscape');
+            sectionDivs.forEach(el => {
+                if (el.classList.contains('SectionLandscape')) {
+                    el.className = 'SectionLandscape';
+                } else {
+                    el.className = 'SectionPortrait';
+                }
+            });
+            
+            const htmlContent = clone.innerHTML;
+            
+            const header = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office'
+                xmlns:w='urn:schemas-microsoft-com:office:word'
+                xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Export Dokumen SertiGen</title>
+                    <style>
+                        ${getPageStyleHelper()}
+                        body { font-family: Times New Roman; font-size: 11pt; color: black; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { padding: 4px; vertical-align: middle; }
+                        .doc-table th, .doc-table td { border: 1pt solid windowtext; text-align: center; }
+                        .doc-table th { font-weight: bold; background-color: #f8fafc; }
+                        .info-table td { border: none; padding: 2pt; text-align: left; }
+                        .doc-header-table td { border: none; }
+                        .no-print-border { border: none !important; }
+                        .doc-signatures td { border: none; }
+                        .doc-sign-box { position: relative; text-align: center; }
+                        .doc-sign-img { position: absolute; z-index: 2; height: 50px; width: auto; }
+                        .doc-cap-img { position: absolute; z-index: 1; height: 65px; width: auto; opacity: 0.85; left: 10px; }
+                        .word-section-break { display: block; clear: both; page-break-before: always; mso-break-type: section-break; }
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                </body>
+            </html>`;
+            
+            const blob = new Blob(['\ufeff', header], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            showToast("Dokumen berhasil diexport ke Word.");
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
