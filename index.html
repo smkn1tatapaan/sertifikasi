@@ -6,7 +6,6 @@
     <meta property="og:title" content="Generator Laporan Sertifikasi Guru" />
     <meta property="og:image" content="https://lh3.googleusercontent.com/d/1murvkWwNcjqHl7XmHXn3wfpMRto0wjPO=s220" />
     <meta property="og:url" content="https://smkn1tatapaan.github.io/sertigen/" />
-    <meta property="og:type" content="website" />
     <title>SertiGen - Generator Laporan Sertifikasi Guru</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -33,7 +32,8 @@
             font-family: 'Inter', Arial;
             background-color: #F8FAFC;
         }
-        /* Styling Khusus Dokumen A4 / F4 */
+
+        /* UPDATE: Container khusus preview dokumen F4/A4 yang dapat di-zoom dan di-scroll */
         .document-preview-container {
             font-family: Arial;
             color: black;
@@ -44,15 +44,17 @@
             align-items: center;
         }
         .a4-wrapper {
-            padding: 2rem;
+            padding: 1.5rem 1rem;
             display: flex;
             justify-content: center;
             min-height: max-content;
             width: 100%;
         }
+
+        /* UPDATE: Dimensi presisi lembar F4 Portrait & Landscape dengan Margin standar kedinasan */
         .f4-sheet {
             background: white;
-            width: 21cm;
+            width: 21.5cm;
             min-height: 33cm;
             padding: 0.3in 0.3in 0.3in 0.5in; /* Top: 0.3in, Right: 0.3in, Bottom: 0.3in, Left: 0.5in */
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -63,7 +65,7 @@
         .f4-landscape {
             background: white;
             width: 33cm;
-            min-height: 21cm;
+            min-height: 21.5cm;
             padding: 0.3in 0.3in 0.3in 0.5in;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             position: relative;
@@ -72,25 +74,64 @@
         }
         
         .word-section-break { display: none; }
+
+        /* UPDATE: Target transformasi zoom smooth untuk dokumen */
         #doc-render-target { 
             display: flex;
             flex-direction: column;
             align-items: center;
             transform-origin: top center;
-            transition: transform 0.2s ease-in-out;
-            width: 100%;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            width: max-content;
         }
-        /* Print Media Queries */
+
+        #form-area {
+            touch-action: pan-x pan-y;
+        }
+
+        /* UPDATE BARU: Animasi Sidebar Smooth, Responsive & Elegan dengan Cubic-Bezier */
+        .sidebar-transition {
+            transition: max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                        padding 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: max-width, width, opacity, transform;
+        }
+        .sidebar-collapsed {
+            max-width: 0px !important;
+            width: 0px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+            opacity: 0 !important;
+            overflow: hidden !important;
+            transform: translateX(-15px);
+            border-right-color: transparent !important;
+            pointer-events: none;
+        }
+        .sidebar-expanded {
+            max-width: 380px !important;
+            width: 100% !important;
+            opacity: 1 !important;
+            transform: translateX(0);
+        }
+
+        #preview-area {
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+        }
+        
+        /* UPDATE: Pengaturan CSS khusus percetakan (Print Mode) */
         @media print {
             body * { visibility: hidden; }
             #doc-render-target, #doc-render-target * { visibility: visible; }
             #doc-render-target { position: absolute; left: 0; top: 0; transform: scale(1) !important; box-shadow: none; margin: 0; padding: 0; }
             @page { margin: 0; }
             .no-print-border { border: none !important; }
+            .no-print { display: none !important; }
         }
         
-        /* Dokumen Elemen Styling Standard Resmi */
-        
+        /* UPDATE: Styling elemen tabel & KOP surat resmi dokumen */
         .doc-header-table { width: 100%; margin-bottom: 2px; }
         .doc-header-table td { vertical-align: middle; }
         .doc-header-border { border-bottom: 1px solid black; margin-bottom: 15px; padding-bottom: 2px; }
@@ -104,32 +145,34 @@
         .doc-table th { font-weight: bold; background-color: #f8fafc; }
         
         .info-table { font-size: 10pt; line-height: 1.3; margin-bottom: 15px;}
-        .info-table td { vertical-align: center; padding: 1px 0; border: none;}
-        .info-table td:nth-child(2) { width: 15px; text-align: center; } /* Colon column */
+        .info-table td { vertical-align: middle; padding: 1px 0; border: none;}
+        .info-table td:nth-child(2) { width: 15px; text-align: center; }
         
+        /* UPDATE: Styling overlay tanda tangan & cap stempel sekolah */
         .doc-signatures { width: 100%; margin-top: 15px; page-break-inside: avoid; border: none;}
-        .doc-signatures td { vertical-align: center; border: none;}
+        .doc-signatures td { vertical-align: middle; border: none;}
         .doc-sign-box { min-height: 55px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative;}
         .doc-sign-img { height: 50px; width: auto; object-fit: contain; mix-blend-mode: multiply; position: absolute; bottom: 15px;}
         .doc-cap-img { height: 65px; width: auto; object-fit: contain; opacity: 0.85; position: absolute; bottom: 5px; left: 10px; z-index: 0; mix-blend-mode: multiply;}
         .doc-sign-name { font-weight: bold; text-decoration: underline; z-index: 1; position: relative;}
         .doc-sign-nip { z-index: 1; position: relative; }
         
-        /* Custom Scrollbar UI */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        /* UPDATE: Custom Scrollbar & Toast Animations */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         
         .toast {
-            position: fixed; bottom: 20px; right: 20px; padding: 15px 25px;
-            background: #333; color: white; border-radius: 8px;
+            position: fixed; bottom: 20px; right: 20px; padding: 12px 20px;
+            background: #1e293b; color: white; border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transform: translateY(100px); opacity: 0; transition: all 0.3s ease; z-index: 50;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         
+        /* UPDATE: Indicator sel tabel yang dapat di-edit langsung (Inline Contenteditable) */
         td[contenteditable="true"]:hover { background-color: #fef08a; cursor: text; }
         td[contenteditable="true"]:focus { background-color: #fff; outline: 2px solid #2563EB; outline-offset: -2px; }
     </style>
@@ -137,60 +180,84 @@
 <body class="h-screen w-full flex flex-col overflow-hidden text-slate-800 bg-background">
     <!-- Header Navbar -->
     <header class="bg-white border-b border-slate-200 z-20 flex-shrink-0 glass-panel shadow-sm">
-        <div class="h-16 px-6 flex items-center justify-between">
-            <!-- Kiri: Brand & Nav Utama -->
-            <div class="flex items-center space-x-2 sm:space-x-4">
-                <button id="toggle-sidebar-btn" onclick="toggleSidebar()" class="hidden text-slate-600 hover:bg-slate-100 p-2 rounded-lg transition-colors" title="Toggle Editor Panel">
-                    <i class="fa-solid fa-bars text-lg"></i>
+        <div class="min-h-16 px-3 sm:px-6 py-2 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 overflow-x-auto">
+            <!-- Kiri: Toggle Sidebar & Navigasi Dokumen Utama -->
+            <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                <button id="toggle-sidebar-btn" onclick="toggleSidebar()" class="hidden text-slate-600 hover:bg-slate-100 hover:text-primary p-2 rounded-lg transition-all shadow-sm border border-slate-200/60 active:scale-95" title="Toggle Panel Editor">
+                    <i id="toggle-sidebar-icon" class="fa-solid fa-outdent text-lg"></i>
                 </button>
                 
-                <nav class="flex space-x-1" id="main-nav">
-                    <button onclick="switchMode('cover')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="cover">Cover</button>
-                    <button onclick="switchMode('sptjm')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="sptjm">SPTJM</button>
-                    <button onclick="switchMode('absen')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="absen">Absen</button>
-                    <button onclick="switchMode('jurnal')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="jurnal">Jurnal</button>
-                    <div class="w-px h-6 bg-slate-200 self-center mx-2"></div>
-                    <button onclick="switchMode('pengaturan')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-50 hover:text-primary" data-mode="pengaturan"><i class="fa-solid fa-gear mr-1.5"></i> Pengaturan</button>
+                <!-- UPDATE: Menu navigasi utama presisi tanpa terpotong pada layar seluler -->
+                <nav class="flex items-center space-x-1 sm:space-x-2" id="main-nav">
+                    <!-- <button onclick="switchMode('master')" class="nav-btn active px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-50 text-primary" data-mode="master">
+                        <i class="fa-solid fa-database mr-1.5"></i> Data Master
+                    </button> -->
+                    <button onclick="switchMode('cover')" class="nav-btn flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-600 hover:bg-slate-50 hover:text-primary group" data-mode="cover">
+                        <i class="fa-solid fa-book-open text-base sm:text-lg mb-0.5 text-slate-400 group-hover:text-primary"></i>
+                        <span class="text-[11px] sm:text-xs">Cover</span>
+                    </button>
+                    <button onclick="switchMode('sptjm')" class="nav-btn flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-600 hover:bg-slate-50 hover:text-primary group" data-mode="sptjm">
+                        <i class="fa-solid fa-file-signature text-base sm:text-lg mb-0.5 text-slate-400 group-hover:text-primary"></i>
+                        <span class="text-[11px] sm:text-xs">SPTJM</span>
+                    </button>
+                    <button onclick="switchMode('absen')" class="nav-btn flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-600 hover:bg-slate-50 hover:text-primary group" data-mode="absen">
+                        <i class="fa-solid fa-clipboard-user text-base sm:text-lg mb-0.5 text-slate-400 group-hover:text-primary"></i>
+                        <span class="text-[11px] sm:text-xs">Absen</span>
+                    </button>
+                    <button onclick="switchMode('jurnal')" class="nav-btn flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-600 hover:bg-slate-50 hover:text-primary group" data-mode="jurnal">
+                        <i class="fa-solid fa-book-bookmark text-base sm:text-lg mb-0.5 text-slate-400 group-hover:text-primary"></i>
+                        <span class="text-[11px] sm:text-xs">Jurnal</span>
+                    </button>
+                    <div class="w-px h-8 bg-slate-200 self-center mx-1"></div>
+                    <button onclick="switchMode('pengaturan')" class="nav-btn flex flex-col items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-600 hover:bg-slate-50 hover:text-primary group" data-mode="pengaturan">
+                        <i class="fa-solid fa-gear text-base sm:text-lg mb-0.5 text-slate-400 group-hover:text-primary"></i>
+                        <span class="text-[11px] sm:text-xs">Pengaturan</span>
+                    </button>
                 </nav>
             </div>
-            <!-- Kanan: Status & Controls -->
-            <div class="flex items-center space-x-3">
-                <span id="auto-save-indicator" class="mr-2 text-xs font-medium text-accent bg-green-50 px-2 py-1 rounded-full flex items-center opacity-0 transition-opacity">
+
+            <!-- Kanan: Auto-Save, Kontrol Zoom, dan Export Word -->
+            <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                <span id="auto-save-indicator" class="hidden md:flex text-xs font-medium text-accent bg-green-50 px-2 py-1 rounded-full items-center opacity-0 transition-opacity">
                     <i class="fa-solid fa-check-circle mr-1"></i> Tersimpan
                 </span>
                 
-                <!-- Zoom Controls -->
-                <div class="flex items-center bg-slate-100 rounded-lg p-1 hidden" id="zoom-controls">
-                    <button onclick="changeZoom(-0.1)" class="p-1 hover:bg-white rounded text-slate-600"><i class="fa-solid fa-minus"></i></button>
-                    <span id="zoom-level" class="text-xs font-medium px-2 min-w-[50px] text-center">100%</span>
-                    <button onclick="changeZoom(0.1)" class="p-1 hover:bg-white rounded text-slate-600"><i class="fa-solid fa-plus"></i></button>
+                <!-- UPDATE: Kontrol Zoom halaman preview (Zoom In/Out, Reset 100%, Auto-Fit Screen) -->
+                <div class="flex items-center bg-slate-100/90 border border-slate-200/60 rounded-lg p-1 hidden space-x-0.5 shadow-inner" id="zoom-controls">
+                    <button onclick="changeZoom(-0.05)" class="p-1.5 hover:bg-white hover:shadow-sm rounded text-slate-600 hover:text-primary transition-all active:scale-95" title="Zoom Out"><i class="fa-solid fa-minus text-xs"></i></button>
+                    <span id="zoom-level" class="text-xs font-semibold px-1.5 min-w-[45px] sm:min-w-[50px] text-center select-none text-slate-700">100%</span>
+                    <button onclick="changeZoom(0.05)" class="p-1.5 hover:bg-white hover:shadow-sm rounded text-slate-600 hover:text-primary transition-all active:scale-95" title="Zoom In"><i class="fa-solid fa-plus text-xs"></i></button>
+                    <div class="w-px h-4 bg-slate-300 mx-1"></div>
+                    <button onclick="triggerAutoFitPreview()" class="p-1.5 hover:bg-white hover:shadow-sm rounded text-slate-600 hover:text-primary transition-all active:scale-95" title="Sesuaikan Layar (Auto Fit)"><i class="fa-solid fa-compress text-xs"></i></button>
+                    <button onclick="setZoom100()" class="p-1.5 hover:bg-white hover:shadow-sm rounded text-slate-600 hover:text-primary transition-all active:scale-95" title="Ukuran 100% (Fullscreen)"><i class="fa-solid fa-expand text-xs"></i></button>
                 </div>
                 
-                <!-- Export Controls -->
-                <div class="flex space-x-2 hidden" id="export-controls">
-                    <button onclick="exportWord()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center" id="btn-export-word" title="Export ke Word">
-                        <i class="fa-solid fa-file-word mr-1.5"></i> Export
+                <!-- UPDATE: Tombol Export khusus Word (.doc) -->
+                <div class="flex items-center space-x-1.5 sm:space-x-2 hidden" id="export-controls">
+                    <button onclick="exportWord()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm flex items-center" id="btn-export-word" title="Export Dokumen ke MS Word">
+                        <i class="fa-solid fa-file-word mr-1.5 text-sm"></i> Export Word
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- Sub Nav untuk Data Master -->
-        <div id="master-sub-nav" class="h-12 border-t border-slate-100 bg-slate-50/80 flex items-center px-6 space-x-2 transition-all">
-            <button onclick="switchMasterTab('sekolah')" class="sub-nav-btn active px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-white text-primary shadow-sm border border-slate-200" data-tab="sekolah"><i class="fa-solid fa-school mr-1.5"></i> Data Sekolah</button>
-            <button onclick="switchMasterTab('guru')" class="sub-nav-btn px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-slate-600 hover:bg-white hover:text-primary" data-tab="guru"><i class="fa-solid fa-chalkboard-user mr-1.5"></i> Data Guru</button>
-            <button onclick="switchMasterTab('pengawas')" class="sub-nav-btn px-4 py-1.5 rounded-md text-sm font-medium transition-colors text-slate-600 hover:bg-white hover:text-primary" data-tab="pengawas"><i class="fa-solid fa-user-tie mr-1.5"></i> Data Pengawas</button>
+        <!-- UPDATE: Sub-Nav untuk Data Master -->
+        <div id="master-sub-nav" class="h-12 border-t border-slate-100 bg-slate-50/80 flex items-center px-3 sm:px-6 space-x-2 overflow-x-auto transition-all">
+            <button onclick="switchMasterTab('sekolah')" class="sub-nav-btn active px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors bg-white text-primary shadow-sm border border-slate-200 whitespace-nowrap" data-tab="sekolah"><i class="fa-solid fa-school mr-1.5"></i> Data Sekolah</button>
+            <button onclick="switchMasterTab('guru')" class="sub-nav-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-600 hover:bg-white hover:text-primary whitespace-nowrap" data-tab="guru"><i class="fa-solid fa-chalkboard-user mr-1.5"></i> Data Guru</button>
+            <button onclick="switchMasterTab('pengawas')" class="sub-nav-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-600 hover:bg-white hover:text-primary whitespace-nowrap" data-tab="pengawas"><i class="fa-solid fa-user-tie mr-1.5"></i> Data Pengawas</button>
         </div>
     </header>
     
     <!-- Main Content Area -->
-    <main class="flex-1 flex overflow-hidden relative">
-        <!-- Kiri: Area Input/Form -->
-        <div id="form-area" class="flex-1 overflow-y-auto p-6 scroll-smooth transition-all duration-300">
-            <div id="view-content" class="max-w-5xl mx-auto space-y-6"></div>
+    <main class="flex-1 flex overflow-hidden relative w-full">
+        <!-- Kiri: Area Input/Form Editor Baris Jurnal -->
+        <!-- UPDATE BARU: Menambahkan class sidebar-transition dan sidebar-expanded untuk transisi animasi smooth & elegan -->
+        <div id="form-area" class="w-full md:w-[380px] flex-shrink-0 overflow-y-auto p-4 scroll-smooth sidebar-transition sidebar-expanded border-r border-slate-200 bg-white">
+            <div id="view-content" class="space-y-6"></div>
         </div>
-        <!-- Kanan: Area Live Preview -->
-        <div id="preview-area" class="w-[60%] border-l border-slate-200 document-preview-container flex-col items-center hidden relative transition-all duration-300">
+        <!-- Kanan: Area Live Preview Document -->
+        <div id="preview-area" class="flex-1 document-preview-container flex-col items-center relative transition-all duration-300 overflow-x-hidden">
             <div class="a4-wrapper">
                 <div id="doc-render-target">
                     <!-- Preview dokumen HTML dirender disini -->
@@ -214,6 +281,9 @@
     <script>
         const URL_SEKOLAH = 'https://raw.githubusercontent.com/tifalockheart930/kuroba/refs/heads/main/db_sekolah.json'; 
         const URL_GURU = 'https://raw.githubusercontent.com/tifalockheart930/kuroba/refs/heads/main/db_guru.json';       
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+        
         const DEFAULT_STATE = {
             sekolah: {}, 
             guru: [],    
@@ -228,7 +298,7 @@
                 tahun: new Date().getFullYear(),
                 nomorSurat: "900/&emsp;&emsp;/SMKN.1/TTPN/VIII-2026",
                 kotaPenetapan: "Tatapaan",
-                tanggalPenetapan: new Date().toISOString().split('T')[0]
+                tanggalPenetapan: calculatePenetapanDate(currentMonth, currentYear)
             },
             jurnalEntries: {} 
         };
@@ -239,8 +309,15 @@
         let saveTimeout;
         let isSidebarCollapsed = false;
         
+        let initialPinchDistance = null;
+        let initialZoomOnPinch = 1;
+
         const $ = id => document.getElementById(id);
-        const updateJournalUI = () => { saveState(); renderJurnalEditorForm($('view-content')); renderDocumentPreview(); };
+        const updateJournalUI = () => { 
+            saveState(); 
+            renderJurnalEditorForm($('view-content')); 
+            renderDocumentPreview(); 
+        };
         
         async function initApp() {
             let savedState = JSON.parse(localStorage.getItem('sertigen_state'));
@@ -270,6 +347,9 @@
             
             if(!appState.jurnalEntries) appState.jurnalEntries = {};
             if(!appState.holidayCache) appState.holidayCache = {};
+            
+            window.addEventListener('resize', autoFitPreview);
+            initPinchToZoom();
             switchMode('pengaturan');
         }
         
@@ -302,17 +382,121 @@
         function applySidebarState() {
             const formArea = $('form-area');
             const previewArea = $('preview-area');
+            const toggleIcon = $('toggle-sidebar-icon');
+            
             if (activeDocType === 'jurnal') {
                 if (isSidebarCollapsed) {
-                    formArea.classList.add('hidden');
-                    previewArea.classList.remove('w-[60%]');
-                    previewArea.classList.add('w-full');
+                    formArea.classList.add('sidebar-collapsed');
+                    formArea.classList.remove('sidebar-expanded');
+                    if (toggleIcon) {
+                        toggleIcon.className = "fa-solid fa-indent text-lg text-primary transition-transform duration-300 hover:scale-110";
+                    }
                 } else {
-                    formArea.classList.remove('hidden');
-                    previewArea.classList.remove('w-full');
-                    previewArea.classList.add('w-[60%]');
+                    formArea.classList.remove('sidebar-collapsed');
+                    formArea.classList.add('sidebar-expanded');
+                    if (toggleIcon) {
+                        toggleIcon.className = "fa-solid fa-outdent text-lg text-slate-600 hover:text-primary transition-transform duration-300 hover:scale-110";
+                    }
                 }
             }
+
+            // Pemicu autoFitPreview bertahap selama animasi 400ms berlangsung agar penyesuaian lembar dokumen mulus
+            let frames = 0;
+            const animInterval = setInterval(() => {
+                autoFitPreview();
+                frames++;
+                if (frames >= 20) clearInterval(animInterval);
+            }, 20);
+        }
+
+        /* UPDATE: Pembaruan fungsi autoFitPreview agar dokumen menyesuaikan lebar DAN tinggi layar agar seluruh lembar dokumen terlihat jelas dengan maksimal zoom 100% (1.0) */
+        function autoFitPreview() {
+            const previewArea = $('preview-area');
+            const target = $('doc-render-target');
+            if (!previewArea || !target || previewArea.classList.contains('hidden')) return;
+            
+            const sheet = target.querySelector('.f4-landscape, .f4-sheet');
+            if (!sheet) return;
+            
+            const sheetWidth = sheet.offsetWidth || (activeDocType === 'jurnal' || activeDocType === 'cover' ? 1247 : 794);
+            const sheetHeight = sheet.offsetHeight || 800;
+            
+            const containerWidth = previewArea.clientWidth - 40; 
+            const containerHeight = previewArea.clientHeight - 40; 
+            
+            if (containerWidth <= 0 || sheetWidth <= 0 || containerHeight <= 0 || sheetHeight <= 0) return;
+            
+            // Hitung rasio untuk lebar dan tinggi
+            const fitScaleX = containerWidth / sheetWidth;
+            const fitScaleY = containerHeight / sheetHeight;
+            
+            // Pilih skala terkecil agar dokumen muat seutuhnya tanpa terpotong
+            let fitScale = Math.min(fitScaleX, fitScaleY);
+            
+            // UPDATE: Membatasi maksimal zoom pada 100% (1.0) dan minimal zoom 0.35
+            fitScale = Math.min(Math.max(fitScale, 0.35), 1.0);
+            
+            currentZoom = Math.round(fitScale * 100) / 100;
+            target.style.transform = `scale(${currentZoom})`;
+            
+            const zoomEl = $('zoom-level');
+            if (zoomEl) zoomEl.innerText = Math.round(currentZoom * 100) + '%';
+        }
+
+        function triggerAutoFitPreview() {
+            autoFitPreview();
+            showToast("Tampilan disesuaikan dengan ukuran layar");
+        }
+
+        function setZoom100() {
+            if (Math.round(currentZoom * 100) === 100) {
+                showToast("Tampilan sudah pada ukuran 100%");
+                return;
+            }
+            currentZoom = 1.0;
+            const target = $('doc-render-target');
+            if (target) target.style.transform = `scale(1.0)`;
+            const zoomEl = $('zoom-level');
+            if (zoomEl) zoomEl.innerText = '100%';
+            showToast("Tampilan diatur ke 100%");
+        }
+
+        function initPinchToZoom() {
+            const previewArea = $('preview-area');
+            if (!previewArea) return;
+
+            previewArea.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    initialPinchDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialZoomOnPinch = currentZoom;
+                }
+            }, { passive: true });
+
+            previewArea.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2 && initialPinchDistance) {
+                    const currentDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const scaleFactor = currentDist / initialPinchDistance;
+                    let newZoom = Math.max(0.35, Math.min(2.0, initialZoomOnPinch * scaleFactor));
+                    currentZoom = Math.round(newZoom * 100) / 100;
+                    
+                    const target = $('doc-render-target');
+                    if (target) target.style.transform = `scale(${currentZoom})`;
+                    const zoomEl = $('zoom-level');
+                    if (zoomEl) zoomEl.innerText = Math.round(currentZoom * 100) + '%';
+                }
+            }, { passive: true });
+
+            previewArea.addEventListener('touchend', function(e) {
+                if (e.touches.length < 2) {
+                    initialPinchDistance = null;
+                }
+            });
         }
         
         function getActiveGuru() {
@@ -378,10 +562,31 @@
             }
             return entries;
         }
+
+        function getNamaHariIndo(dayIdx) {
+            const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            return days[dayIdx] || "";
+        }
         
         function getNamaBulan(b) {
             const bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
             return bulan[b - 1] || "";
+        }
+
+        function formatTanggalEditorBaris(isoDateStr, fallbackTanggal) {
+            if (isoDateStr) {
+                const parts = isoDateStr.split('-');
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    if (!isNaN(d.getTime())) {
+                        const hari = getNamaHariIndo(d.getDay());
+                        const tgl = String(d.getDate()).padStart(2, '0');
+                        const bln = getNamaBulan(d.getMonth() + 1);
+                        return `${hari}, ${tgl} ${bln}`;
+                    }
+                }
+            }
+            return fallbackTanggal || '';
         }
         
         function formatTanggalIndo(dateStr) {
@@ -420,19 +625,21 @@
         }
         
         function calculatePenetapanDate(bulan, tahun) {
-            const today = new Date();
             const targetBulan = parseInt(bulan);
             const targetTahun = parseInt(tahun);
-            if (targetBulan === (today.getMonth() + 1) && targetTahun === today.getFullYear()) {
-                const yyyy = today.getFullYear();
-                const mm = (today.getMonth() + 1).toString().padStart(2, '0');
-                const dd = today.getDate().toString().padStart(2, '0');
-                return `${yyyy}-${mm}-${dd}`;
+            
+            // Mengambil tanggal terakhir dari bulan yang dipilih (day 0 dari bulan berikutnya)
+            let d = new Date(targetTahun, targetBulan, 0);
+            let dayOfWeek = d.getDay(); // 0 = Minggu, 6 = Sabtu
+            
+            // Jika jatuh di hari Sabtu (6), mundurkan 1 hari ke Jumat
+            if (dayOfWeek === 6) {
+                d.setDate(d.getDate() - 1);
+            } 
+            // Jika jatuh di hari Minggu (0), mundurkan 2 hari ke Jumat
+            else if (dayOfWeek === 0) {
+                d.setDate(d.getDate() - 2);
             }
-            let d = new Date(targetTahun, targetBulan - 1, 1);
-            let dayOfWeek = d.getDay();
-            if (dayOfWeek === 6) d.setDate(3);
-            else if (dayOfWeek === 0) d.setDate(2);
             
             const yyyy = d.getFullYear();
             const mm = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -527,26 +734,59 @@
         function addNewMainRow() {
             const jKey = getJournalKey();
             const currentEntries = getActiveJournalEntries();
-            const daysInMonth = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
-            const mainRowCount = currentEntries.filter(row => !row.isSubRow).length;
+            const bulan = appState.generator.bulan;
+            const tahun = appState.generator.tahun;
             
-            if (mainRowCount >= daysInMonth) {
-                showToast("Batas maksimal baris utama untuk bulan ini tercapai.");
+            const startDay = appState.generator.tanggalAwalJurnal || 1;
+            const endDay = appState.generator.tanggalAkhirJurnal || new Date(tahun, bulan, 0).getDate();
+            
+            // Kumpulkan tanggal ISO yang sudah terisi dalam baris utama (bukan sub-baris)
+            const existingDates = new Set(
+                currentEntries.filter(r => !r.isSubRow && r.isoDate).map(r => r.isoDate)
+            );
+            
+            let missingWorkdayIso = null;
+            let missingDayNum = null;
+            
+            // Cari tanggal hari kerja (Senin - Jumat) pertama pada rentang tanggal yang belum ada di tabel
+            for (let d = startDay; d <= endDay; d++) {
+                let dateObj = new Date(tahun, bulan - 1, d);
+                let dayIdx = dateObj.getDay(); // 0 = Minggu, 6 = Sabtu
+                
+                // Hanya memproses hari kerja (Senin s/d Jumat)
+                if (dayIdx !== 0 && dayIdx !== 6) {
+                    let iso = `${tahun}-${bulan.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+                    if (!existingDates.has(iso)) {
+                        missingWorkdayIso = iso;
+                        missingDayNum = d;
+                        break;
+                    }
+                }
+            }
+
+            if (!missingWorkdayIso) {
+                showToast(`⚠️ Semua hari kerja pada bulan ${getNamaBulan(appState.generator.bulan)} dan rentang tanggal yang dipilih sudah terisi!`);
                 return;
             }
+
+            let holidayName = appState.holidayCache && appState.holidayCache[tahun] ? appState.holidayCache[tahun][missingWorkdayIso] : null;
+            let isHoliday = (holidayName !== null && holidayName !== undefined);
             
             const newRow = {
                 id: `row_manual_${Date.now()}`,
                 tanggal: `Baris Baru`,
-                isoDate: new Date(appState.generator.tahun, appState.generator.bulan - 1, mainRowCount + 1).toISOString().split('T')[0],
-                isHoliday: false,
-                materi: "", jp: "", kelas: "", hadir: "", tidakHadir: "", totalSiswa: "", masalah: "", foto: "", keterangan: "",
+                tanggal: `${missingDayNum.toString().padStart(2, '0')}/${bulan.toString().padStart(2, '0')}/${tahun}`,
+                isoDate: missingWorkdayIso,
+                isHoliday: isHoliday,
+                materi: holidayName ? `${holidayName}` : '',
+                jp: "", kelas: "", hadir: "", tidakHadir: "", totalSiswa: "", masalah: "", foto: "", keterangan: "",
                 isSubRow: false
             };
-            
+
             currentEntries.push(newRow);
+            currentEntries.sort((a, b) => new Date(a.isoDate) - new Date(b.isoDate));
             updateJournalUI();
-            showToast("Baris utama berhasil ditambahkan.");
+            showToast(`Baris hari ${missingDayNum.toString()} tanggal ${missingDayNum} ${getNamaBulan(bulan)} berhasil ditambahkan.`);
         }
         
         function addJournalSubRow(index) {
@@ -583,11 +823,11 @@
                 showToast(rowToDelete.isSubRow ? "Sub baris berhasil dihapus." : "Baris utama dan sub baris berhasil dihapus.");
             }
         }
-        
+
         async function resetJournalRows() {
             const jKey = getJournalKey();
             await checkAndFetchHolidays(appState.generator.tahun);
-            const startDay = new Date(appState.generator.tanggalPenetapan).getDate();
+            const startDay = appState.generator.tanggalAwalJurnal || 1;
             const endDay = appState.generator.tanggalAkhirJurnal || new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
             appState.jurnalEntries[jKey] = generateJournalDays(appState.generator.bulan, appState.generator.tahun, startDay, endDay);
             updateJournalUI();
@@ -608,22 +848,27 @@
             const content = $('view-content'), formArea = $('form-area'), previewArea = $('preview-area');
             const masterSubNav = $('master-sub-nav'), exportControls = $('export-controls'), zoomControls = $('zoom-controls'), toggleBtn = $('toggle-sidebar-btn');
             
-            formArea.classList.remove('hidden'); previewArea.classList.remove('hidden', 'flex');
-            masterSubNav.classList.remove('flex', 'hidden'); toggleBtn.classList.add('hidden');
+            formArea.classList.remove('hidden'); 
+            previewArea.classList.remove('hidden', 'flex');
+            masterSubNav.classList.remove('flex', 'hidden'); 
+            toggleBtn.classList.add('hidden');
             
             if(mode === 'master') {
                 masterSubNav.classList.add('flex'); previewArea.classList.add('hidden'); exportControls.classList.add('hidden'); zoomControls.classList.add('hidden');
+                formArea.className = "flex-1 overflow-y-auto p-6 scroll-smooth transition-all duration-300 bg-white";
                 content.classList.add('max-w-5xl', 'mx-auto');
                 switchMasterTab(currentMasterTab);
             } else if (mode === 'pengaturan') {
                 masterSubNav.classList.add('hidden'); previewArea.classList.add('hidden'); exportControls.classList.add('hidden'); zoomControls.classList.add('hidden');
+                formArea.className = "flex-1 overflow-y-auto p-6 scroll-smooth transition-all duration-300 bg-white";
                 content.classList.add('max-w-5xl', 'mx-auto');
                 renderPengaturanForm(content);
             } else {
                 masterSubNav.classList.add('hidden'); previewArea.classList.add('flex'); exportControls.classList.remove('hidden'); zoomControls.classList.remove('hidden');
                 activeDocType = mode;
                 if (mode === 'jurnal') {
-                    toggleBtn.classList.remove('hidden'); content.classList.remove('max-w-5xl', 'mx-auto');
+                    toggleBtn.classList.remove('hidden'); 
+                    content.classList.remove('max-w-5xl', 'mx-auto');
                     applySidebarState();
                     await checkAndFetchHolidays(appState.generator.tahun);
                     const jKey = getJournalKey();
@@ -653,6 +898,7 @@
         function updateState(obj, key, value) {
             appState[obj][key] = value;
             if (obj === 'generator' && (key === 'bulan' || key === 'tahun')) {
+                // Saat bulan/tahun diubah, tanggal default penetapan diatur ke tanggal akhir di hari kerja
                 const newTanggal = calculatePenetapanDate(appState.generator.bulan, appState.generator.tahun);
                 appState.generator.tanggalPenetapan = newTanggal;
                 appState.generator.tanggalAkhirJurnal = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
@@ -873,28 +1119,17 @@
         
         function renderFormPengawas(container) {
             container.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4 gap-4">
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-users mr-2 text-primary"></i> Daftar Guru / Pegawai</h3>
-                        <p class="text-sm text-slate-500 mt-1">Berikut adalah daftar data guru yang terdaftar dalam sistem.</p>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-user-tie mr-2 text-primary"></i> Data Pengawas Pembina</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        ${createInputGroup('Nama Pengawas & Gelar', 'text', 'pengawas', 'nama', 2)}
+                        ${createInputGroup('NIP', 'text', 'pengawas', 'nip')}
+                        ${createInputGroup('Pangkat / Golongan', 'text', 'pengawas', 'golongan')}
+                        ${createInputGroup('Jabatan', 'text', 'pengawas', 'jabatan')}
+                        ${createInputGroup('Instansi', 'text', 'pengawas', 'instansi')}
                     </div>
                 </div>
-                <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 border-b border-slate-200">
-                            <tr>
-                                <th class="p-3 w-12 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">No</th>
-                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Nama & NIP / NUPTK</th>
-                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Tugas Tambahan</th>
-                                <th class="p-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Mata Pelajaran</th>
-                            </tr>
-                        </thead>
-                        <tbody>${tbody}</tbody>
-                    </table>
-                </div>
-            </div>`;
+            `;
         }
 
         function renderPengaturanForm(container) {
@@ -907,6 +1142,45 @@
             const maxDays = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
             const minDate = `${appState.generator.tahun}-${mm}-01`;
             const maxDate = `${appState.generator.tahun}-${mm}-${maxDays}`;
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-6 mt-4">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6 border-b pb-3 flex items-center"><i class="fa-solid fa-gear text-primary mr-2"></i> Pengaturan Parameter Laporan</h3>
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Pilih Guru</label>
+                        <select onchange="appState.activeGuruId = parseInt(this.value); saveState(); renderPengaturanForm($('view-content'));" class="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-base bg-blue-50/60 font-bold text-primary cursor-pointer">${guruOptions.length ? guruOptions : '<option disabled selected>Belum ada data guru</option>'}</select>
+                        <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i> Semua dokumen akan di-generate menggunakan data dari guru yang dipilih di sini.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-2">Bulan Laporan</label><select onchange="updateState('generator', 'bulan', this.value); renderPengaturanForm($('view-content'));" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">${bulanOptions}</select></div>
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-2">Tahun Laporan</label><select onchange="updateState('generator', 'tahun', this.value); renderPengaturanForm($('view-content'));" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">${tahunOptions}</select></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div><label class="block text-sm font-semibold text-slate-700 mb-2">Nomor Surat SPTJM / Lampiran</label><input type="text" id="input-no-sptjm" value="${appState.generator.nomorSurat}" oninput="updateState('generator', 'nomorSurat', this.value);" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"></div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Tanggal Surat SPTJM</label>
+                            <input type="date" id="input-tanggal-penetapan" value="${appState.generator.tanggalPenetapan}" min="${minDate}" max="${maxDate}" onchange="updateState('generator', 'tanggalPenetapan', this.value);" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">
+                            <p class="text-[10px] text-slate-500 mt-1">Hanya menampilkan hari pada bulan berjalan.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPengaturanForm(container) {
+            const bulanOptions = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+                .map((b, i) => `<option value="${i+1}" ${appState.generator.bulan == i+1 ? 'selected' : ''}>${b}</option>`).join('');
+            const tahunOptions = [2026, 2027, 2028, 2029, 2030].map(t => `<option value="${t}" ${appState.generator.tahun == t ? 'selected' : ''}>${t}</option>`).join('');
+            const guruOptions = appState.guru.map(g => `<option value="${g.id}" ${appState.activeGuruId == g.id ? 'selected' : ''}>${g.nama}</option>`).join('');
+            
+            const mm = String(appState.generator.bulan).padStart(2, '0');
+            const maxDays = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
+            const minDate = `${appState.generator.tahun}-${mm}-01`;
+            const maxDate = `${appState.generator.tahun}-${mm}-${maxDays}`;
+
+            // Jika tanggal penetapan belum diisi, gunakan tanggal default di akhir hari kerja
+            if (!appState.generator.tanggalPenetapan) {
+                appState.generator.tanggalPenetapan = calculatePenetapanDate(appState.generator.bulan, appState.generator.tahun);
+            }
             container.innerHTML = `
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-6 mt-4">
                     <h3 class="text-xl font-bold text-slate-800 mb-6 border-b pb-3 flex items-center"><i class="fa-solid fa-gear text-primary mr-2"></i> Pengaturan Parameter Laporan</h3>
@@ -952,25 +1226,31 @@
                 if (!row.isSubRow) {
                     let rowSpan = 1;
                     for (let j = i + 1; j < entries.length; j++) { if (entries[j].isSubRow) rowSpan++; else break; }
+                    const formattedDate = formatTanggalEditorBaris(row.isoDate, row.tanggal);
+                    
+                    const addSubRowBtn = row.isHoliday ? '' : `
+                        <button onclick="addJournalSubRow(${i})" class="px-2 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded border border-indigo-200 font-semibold transition-colors shadow-sm text-[10px]" title="Tambah Sub Baris (Merge Tanggal)">
+                            <i class="fa-solid fa-plus"></i> Baris
+                        </button>
+                    `;
+                    
                     journalEditorRows += `<tr class="border-b border-slate-200 hover:bg-slate-50 text-xs">
                         <td rowspan="${rowSpan}" class="p-2 text-center font-semibold text-slate-600 border-r border-slate-200 align-top pt-3" style="vertical-align:middle">${displayNoSetting++}</td>
-                        <td rowspan="${rowSpan}" class="p-2 font-medium text-slate-700 whitespace-nowrap border-r border-slate-200 align-top pt-3" style="vertical-align:middle">${row.tanggal}</td>
+                        <td rowspan="${rowSpan}" class="p-2 font-medium text-slate-700 whitespace-nowrap border-r border-slate-200 align-top pt-3" style="vertical-align:middle">${formattedDate}</td>
                         <td class="p-2 text-center border-l border-slate-100">
-                            <div class="flex items-center justify-center space-x-1.5">
+                            <div class="flex items-center justify-center space-x-1">
                                 <button onclick="toggleHolidayRow(${i})"
-                                    class="px-2.5 py-1 ${
+                                    class="px-2 py-1 ${
                                         row.isHoliday
                                             ? 'bg-red-600 text-white hover:bg-red-700'
                                             : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-300'
                                     } rounded font-semibold transition-colors shadow-sm text-[10px]"
                                     title="Toggle Libur">
-
                                     <i class="fa-solid ${row.isHoliday ? 'fa-umbrella-beach' : 'fa-calendar-plus'} mr-1"></i>
                                     ${row.isHoliday ? 'Libur' : 'Efektif'}
                                 </button>
-
-                                <button onclick="addJournalSubRow(${i})" class="px-2 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded border border-indigo-200 font-semibold transition-colors shadow-sm text-[10px]" title="Tambah Sub Baris (Merge Tanggal)"><i class="fa-solid fa-plus"></i>Baris</button>
-                                <button onclick="deleteJournalRow(${i})" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded border border-rose-200 font-semibold transition-colors shadow-sm text-[10px]" title="Hapus Baris"><i class="fa-solid fa-trash-can"></i>Hapus</button>
+                                ${addSubRowBtn}
+                                <button onclick="deleteJournalRow(${i})" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded border border-rose-200 font-semibold transition-colors shadow-sm text-[10px]" title="Hapus Baris"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </td>
                     </tr>`;
@@ -978,7 +1258,7 @@
                     journalEditorRows += `<tr class="border-b border-slate-200 bg-indigo-50/20 text-xs">
                         <td class="p-2 text-center border-l border-slate-100">
                             <div class="flex items-center justify-center space-x-2">
-                                <span class="text-[10px] text-slate-400 font-medium italic mr-2"><i class="fa-solid fa-level-up-alt rotate-90 mr-1"></i>Sub-baris lanjutan</span>
+                                <span class="text-[10px] text-slate-400 font-medium italic mr-2"><i class="fa-solid fa-level-up-alt rotate-90 mr-1"></i>Sub-baris</span>
                                 <button onclick="deleteJournalRow(${i})" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded border border-rose-200 font-semibold transition-colors shadow-sm text-[10px]" title="Hapus Sub Baris"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </td>
@@ -986,29 +1266,28 @@
                 }
             }
             container.innerHTML = `
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 mb-5 mt-2">
-                    <div class="flex flex-col xl:flex-row xl:justify-between xl:items-center mb-4 space-y-3 xl:space-y-0">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 mb-4 mt-1">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 space-y-2 sm:space-y-0">
                         <div>
                             <h3 class="text-sm font-bold text-slate-800 flex items-center"><i class="fa-solid fa-list-check text-primary mr-2"></i> Editor Baris Jurnal</h3>
-                            <p class="text-xs text-slate-500 mt-1">Atur baris jurnal untuk bulan yang dipilih.</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Atur baris jurnal bulan ini.</p>
                         </div>
-                        <!-- Tombol Tambah Baris Utama Dipindahkan ke Atas Tabel -->
-                        <div class="flex space-x-2">
-                            <button onclick="addNewMainRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm flex items-center">
-                                <i class="fa-solid fa-plus mr-1.5"></i> Tambah Hari
+                        <div class="flex space-x-1.5">
+                            <button onclick="addNewMainRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shadow-sm flex items-center">
+                                <i class="fa-solid fa-plus mr-1"></i> Tambah Hari
                             </button>
-                            <button onclick="resetJournalRows()" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors border border-rose-200 shadow-sm flex items-center">
+                            <button onclick="resetJournalRows()" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg text-xs font-semibold transition-colors border border-rose-200 shadow-sm flex items-center">
                                 <i class="fa-solid fa-rotate-left mr-1"></i> Reset
                             </button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg max-h-[70vh] overflow-y-auto">
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg max-h-[72vh] overflow-y-auto">
                         <table class="w-full text-left border-collapse">
                             <thead class="sticky top-0 bg-slate-100 z-10 shadow-sm">
-                                <tr class="text-slate-600 text-xs font-semibold uppercase tracking-wider">
-                                    <th class="p-2.5 text-center w-10 border-b border-r border-slate-200">No</th>
-                                    <th class="p-2.5 border-b border-r border-slate-200">Tanggal</th>
-                                    <th class="p-2.5 text-center w-48 border-b border-slate-200">Aksi</th>
+                                <tr class="text-slate-600 text-[11px] font-semibold uppercase tracking-wider">
+                                    <th class="p-2 text-center w-8 border-b border-r border-slate-200">No</th>
+                                    <th class="p-2 border-b border-r border-slate-200">Tanggal</th>
+                                    <th class="p-2 text-center border-b border-slate-200">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1037,10 +1316,17 @@
             } else if (activeDocType === 'jurnal') {
                 target.innerHTML = getDocJurnal();
             }
+            setTimeout(autoFitPreview, 30);
         }
-        
+
         function changeZoom(delta) {
-            currentZoom = Math.max(0.5, Math.min(2.0, currentZoom + delta));
+            currentZoom = Math.max(0.35, Math.min(2.0, currentZoom + delta));
+            $('zoom-level').innerText = Math.round(currentZoom * 100) + '%';
+            $('doc-render-target').style.transform = `scale(${currentZoom})`;
+        }
+
+        function changeZoom(delta) {
+            currentZoom = Math.max(0.35, Math.min(2.0, currentZoom + delta));
             $('zoom-level').innerText = Math.round(currentZoom * 100) + '%';
             $('doc-render-target').style.transform = `scale(${currentZoom})`;
         }
@@ -1051,7 +1337,7 @@
             const logoR = s.logoKanan ? `<img src="${s.logoKanan}" class="doc-logo" style="display: inline; vertical-align:middle; text-align: center; object-fit:contain;" width="100" height="100">` : '';
             const jLogoL = s.logoKiri ? `<img src="${s.logoKiri}" class="doc-logo" style="display: inline; vertical-align:middle; text-align: center; object-fit:contain;" width="150" height="150">` : '';
             const jLogoR = s.logoKanan ? `<img src="${s.logoKanan}" class="doc-logo" style="display: inline; vertical-align:middle; text-align: center; object-fit:contain;" width="150" height="150">` : '';
-            const extraLogo = (type !== 'sptjm') ? `<td style="width: 25%; text-align: center;">${logoR}</td>` : ``;
+            const extraLogo = (type !== 'sptjm') ? `<td style="width: 20%; text-align: center;">${logoR}</td>` : ``;
 
             if (type === 'sptjm'){
             return `
@@ -1064,30 +1350,30 @@
                         <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
                         <div style="font-size: 7pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
                         <div style="font-size: 7pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
-                    </td><td style="width: 14%; text-align: center;"></td>
+                    </td><td style="width: 12%; text-align: center;"></td>
                 </tr>
             </table><br>`;
             }else if (type === 'jurnal'){
             return `
             <table style="width: 100%; border-bottom: 5pt double #000; margin-bottom: 3px;">
                 <tr>
-                    <td style="width: 25%; text-align: right;">${jLogoL}</td>
-                    <td style="width: 50%; text-align: center; padding: 0 10px; padding-bottom: 5px;">
+                    <td style="width: 20%; text-align: right;">${jLogoL}</td>
+                    <td style="width: 60%; text-align: center; padding: 0 10px; padding-bottom: 5px;">
                         <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">PEMERINTAH PROVINSI ${(s.provinsi || '').toUpperCase()}</div>
                         <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
                         <div style="font-size: 20pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
                         <div style="font-size: 10pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
                         <div style="font-size: 10pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
                     </td>
-                    <td style="width: 25%; text-align: left;">${jLogoR}</td>
+                    <td style="width: 20%; text-align: left;">${jLogoR}</td>
                 </tr>
             </table>`;
             }else {
                 return `
                 <table style="width: 100%; border-bottom: 5pt double #000; margin-bottom: 3px;">
                     <tr>
-                        <td style="width: 14%; text-align: center;">${logoL}</td>
-                        <td style="width: 72%; text-align: center; padding: 0 10px; padding-bottom: 5px;">
+                        <td style="width: 12%; text-align: center;">${logoL}</td>
+                        <td style="width: 76%; text-align: center; padding: 0 10px; padding-bottom: 5px;">
                             <div style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">PEMERINTAH PROVINSI ${(s.provinsi || '').toUpperCase()}</div>
                             <div style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
                             <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
@@ -1110,47 +1396,47 @@
                     <div class="doc-body" style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 1000px; padding: 20px 40px; font-family: 'Times New Roman';">
                         <div style="font-family: 'Cambria'; font-size: 20pt; font-weight: bold; margin-top: 40px; text-align: center; margin-bottom: 15px;">BERKAS</div>
                         <br>
-                        <div style="font-family: margin:0; pading: 0; 'Cambria'; font-size: 16pt; font-weight: bold; text-align: center;">PENERIMA TUNJANGAN PROFESI GURU (TPG)</div>
-                        <div style="font-family: 'Cambria'; margin:0; pading: 0; font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 60px;">BULAN ${getNamaBulan(gen.bulan).toUpperCase()}</div>
+                        <div style="font-family: 'Cambria'; margin:0; padding: 0; font-size: 16pt; font-weight: bold; text-align: center;">PENERIMA TUNJANGAN PROFESI GURU (TPG)</div>
+                        <div style="font-family: 'Cambria'; margin:0; padding: 0; font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 60px;">BULAN ${getNamaBulan(gen.bulan).toUpperCase()}</div>
                         <table style="width: 100%; max-width: 600px; margin: 0 auto; font-size: 11pt; border-collapse: separate; border-spacing: 0 15px;">
                             <tr style="padding : 0 5pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 40%; font-weight: bold; vertical-align: center;">NAMA GURU</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 5%; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 40%; font-weight: bold; vertical-align: middle;">NAMA GURU</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 5%; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; width: 55%; font-weight: bold;">${g.nama}</td>
                             </tr>
                             <tr style="height: 40pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NIP</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NIP</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nip || '-'}</td>
                             </tr>
                             <tr style="height : 40pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NUPTK</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NUPTK</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nuptk || '-'}</td>
                             </tr>
                             <tr style="height: 40pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NRG</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NRG</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nrg || '-'}</td>
                             </tr>
                             <tr style="height: 40pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NPWP</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NPWP</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.npwp || '-'}</td>
                             </tr>
                             <tr style="height: 40pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NOMOR REKENING / BANK</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NOMOR REKENING / BANK</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.norek || '-'} / ${g.bank || '-'}</td>
                             </tr>
                             <tr style="height: 40pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">NAMA SEKOLAH</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NAMA SEKOLAH</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${s.nama}</td>
                             </tr>
                             <tr style="height: 40pt">
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: center;">ALAMAT SEKOLAH</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: center;">:</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">ALAMAT SEKOLAH</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${s.alamat || ''}, ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''}</td>
                             </tr>
                         </table>
@@ -1174,10 +1460,10 @@
                 ` : ''}
                 <table style="width: 100%; height: 100%; border-collapse: collapse; border: 3.5pt solid #5b21b6; border-left: 7pt solid #5b21b6; border-right: 7pt solid #5b21b6; table-layout: fixed; position: relative; z-index: 2;">
                     <tr>
-                        <td style="padding: 4px; vertical-align: center;">
+                        <td style="padding: 4px; vertical-align: middle;">
                             <table style="width: 100%; height: 100%; border-collapse: collapse; border: 1.8pt solid #1d4ed8; table-layout: fixed;">
                                 <tr>
-                                    <td style="padding: 0.25in 0.4in; vertical-align: center; background: transparent;">
+                                    <td style="padding: 0.25in 0.4in; vertical-align: middle; background: transparent;">
                                         <table style="width: 100%; border-bottom: 5pt double #000; margin-bottom: 3px;">
                                             <tr>
                                                 <td style="width: 20%; text-align: center; vertical-align: middle; padding-bottom: 8px;">
@@ -1211,7 +1497,7 @@
                                                     <td style="color: #000;">NIP</td>
                                                     <td style="text-align: center; color: #000;">:</td>
                                                     <td style="font-weight: bold; color: #000;">${g.nip || '-'}</td>
-                                                </tr">
+                                                </tr>
                                                 <tr style="height: 40pt">
                                                     <td style="color: #000;">NUPTK</td>
                                                     <td style="text-align: center; color: #000;">:</td>
@@ -1224,7 +1510,7 @@
                                                 </tr>
                                             </table>
                                         </div>
-                                        <div style="text-align: center; margin-top: 40pt; margin-bottom 8pt; font-size: 16pt; font-weight: bold; font-family: 'Arial', sans-serif; color: #000;">
+                                        <div style="text-align: center; margin-top: 40pt; margin-bottom: 8pt; font-size: 16pt; font-weight: bold; font-family: 'Arial', sans-serif; color: #000;">
                                             TAHUN ${gen.tahun}
                                         </div>
                                     </td>
@@ -1241,7 +1527,7 @@
         function getDocSPTJM() {
             const s = appState.sekolah, g = getActiveGuru(), gen = appState.generator;
             const sptjmContent = `
-            <div class="f4-sheet SectionPortrait" style="font-family:'Arial'";>${getHeaderHTML('sptjm')}
+            <div class="f4-sheet SectionPortrait" style="font-family:'Arial';">${getHeaderHTML('sptjm')}
                 <div class="doc-body">
                     <div style="text-align: center; font-weight: bold; font-size: 11pt; text-decoration: underline;">SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK</div>
                     <div style="text-align: center; margin-bottom: 20px; font-size: 11pt;">Nomor : ${gen.nomorSurat}</div>
@@ -1348,13 +1634,13 @@
                         <tr>
                             <td style="width: 55%;"></td>
                             <td style="width: 45%; text-align: center;">
-                                <div style="font-family:'Arial'; style="font-size: 12pt; font-weight: bold; margin-bottom: 15px;">Kepala Sekolah,</div>
-                                <div class="doc-sign-box" margin-top: 15px;">
+                                <div style="font-family:'Arial'; font-size: 12pt; font-weight: bold; margin-bottom: 15px;">Kepala Sekolah,</div>
+                                <div class="doc-sign-box" style="margin-top: 15px;">
                                     ${s.capSekolah ? `<img src="${s.capSekolah}" class="doc-cap-img" style="left: 40px;">` : ''}
                                     ${s.ttdKepsek ? `<img src="${s.ttdKepsek}" class="doc-sign-img">` : ''}
                                     <br><br><br><br>
-                                    <div class="doc-sign-name" style="font-family:'Arial'; style="font-size: 12pt; font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${s.kepsekNama}</div>
-                                    <div class="doc-sign-nip" style="font-family:'Arial'; style="font-size: 12pt; font-weight: bold; margin: 0; padding: 0">NIP. ${s.kepsekNip}</div>
+                                    <div class="doc-sign-name" style="font-family:'Arial'; font-size: 12pt; font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${s.kepsekNama}</div>
+                                    <div class="doc-sign-nip" style="font-family:'Arial'; font-size: 12pt; font-weight: bold; margin: 0; padding: 0">NIP. ${s.kepsekNip}</div>
                                 </div>
                             </td>
                         </tr>
@@ -1483,17 +1769,17 @@
                         <table class="doc-table" style="margin-bottom: 20px;">
                             <thead>
                                 <tr>
-                                <th rowspan="2" style="width: 5%;">NO</th>
-                                <th rowspan="2" style="width: 25%;">HARI / TGL</th>
-                                <th colspan="2" style="width: 25%;">MASUK</th>
-                                <th colspan="2" style="width: 25%;">PULANG</th>
-                                <th rowspan="2" style="width: 20%;">KET<br><span style="font-weight: normal; font-size: 11pt;">(Izin, Sakit, TB)</span></th>
+                                    <th rowspan="2" style="width: 5%;">NO</th>
+                                    <th rowspan="2" style="width: 25%;">HARI / TGL</th>
+                                    <th colspan="2" style="width: 25%;">MASUK</th>
+                                    <th colspan="2" style="width: 25%;">PULANG</th>
+                                    <th rowspan="2" style="width: 20%;">KET<br><span style="font-weight: normal; font-size: 11pt;">(Izin, Sakit, TB)</span></th>
                                 </tr>
                                 <tr>
-                                <th style="width: 12%;">JAM (Wita)</th>
-                                <th>TTD</th>
-                                <th style="width: 12%;">JAM (Wita)</th>
-                                <th>TTD</th>
+                                    <th style="width: 12%;">JAM (Wita)</th>
+                                    <th>TTD</th>
+                                    <th style="width: 12%;">JAM (Wita)</th>
+                                    <th>TTD</th>
                                 </tr>
                             </thead>
                             <tbody>${rows}</tbody>
@@ -1550,8 +1836,8 @@
                 }
                 if (r.isHoliday) return `
                     <tr>${noCell}${tglCell}
-                        <td colspan="8" style="text-align:center;font-weight:bold;background-color:#ffe4e6;height: 60pt;color:red;letter-spacing:1px;" ${editable('materi')}>${r.materi}</td>
-                        <td style="color:red;font-weight:bold;text-align:center;" ${editable('keterangan')}>${r.keterangan || 'Libur'}</td>
+                        <td colspan="9" style="text-align:center;font-weight:bold;background-color:#ffe4e6;height: 60pt;color:red;letter-spacing:1px;" ${editable('materi')}>${r.materi}</td>
+                        <!-- <td style="color:red;font-weight:bold;text-align:center;" ${editable('keterangan')}>${r.keterangan || 'Libur'}</td> -->
                     </tr>`;
                 
                 let imgCol = r.foto ? `
@@ -1699,7 +1985,7 @@
                 page: SectionPortrait; 
             } 
             @page SectionLandscape { 
-                size: 33cm 21cm; 
+                size: 33cm 21.5cm; 
                 mso-page-orientation: landscape; 
                 margin: 0.5cm 0.5cm 0.5cm 1cm; 
                 mso-header-margin: 0.5cm; 
