@@ -1159,8 +1159,8 @@
                         <label class="block text-sm font-bold text-slate-700 mb-2">Pilih Guru</label>
                         <!-- Update data guru: Mengubah activeGuruId sesuai pilihan guru atau null jika "Pilih Guru" -->
                         <select onchange="appState.activeGuruId = this.value ? parseInt(this.value) : null; saveState(); renderPengaturanForm($('view-content'));" class="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-base bg-blue-50/60 font-bold text-primary cursor-pointer">${guruOptions}</select>
-                        <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i> Semua dokumen akan di-generate menggunakan data dari guru yang dipilih di sini.</p>
-                        ${!appState.activeGuruId ? '<p class="text-xs text-amber-600 font-semibold mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Silakan pilih guru terlebih dahulu untuk menampilkan data pada dokumen.</p>' : ''}
+                        </p>${!appState.activeGuruId ? '<p class="text-xs text-amber-600 font-semibold mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Silahkan pilih guru terlebih dahulu untuk menampilkan data pada dokumen.</p>' : ''}
+                        <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i> Semua dokumen akan di-generate menggunakan data dari guru yang dipilih di sini.
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div><label class="block text-sm font-semibold text-slate-700 mb-2">Bulan Laporan</label><select onchange="updateState('generator', 'bulan', this.value); renderPengaturanForm($('view-content'));" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">${bulanOptions}</select></div>
