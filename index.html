@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:title" content="Generator Laporan Sertifikasi Guru" />
     <meta property="og:image" content="https://lh3.googleusercontent.com/d/1murvkWwNcjqHl7XmHXn3wfpMRto0wjPO=s220" />
-    <meta property="og:image:type" content="image/png">
-    <meta property="og:image:width" content="80">
-    <meta property="og:image:height" content="80">
-    <meta property="og:url" content="https://smkn1tatapaan.github.io/sertifikasi/" />
-    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://smkn1tatapaan.github.io/sertigen/" />
     <title>SertiGen - Generator Laporan Sertifikasi Guru</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -291,7 +287,7 @@
         const DEFAULT_STATE = {
             sekolah: {}, 
             guru: [],    
-            activeGuruId: 20,
+            activeGuruId: null,
             pengawas: {
                 nama: "Dra. Moontje Kalalo", nip: "19680305 199412 2 004",
                 golongan: "IV/b", jabatan: "Pengawas Bina", instansi: "Dinas Pendidikan Daerah",
@@ -345,7 +341,6 @@
                 appState = savedState;
                 if (appState.guru && !Array.isArray(appState.guru)) {
                     appState.guru = [{...appState.guru, id: 1}];
-                    appState.activeGuruId = 1;
                 }
             }
             
@@ -502,9 +497,10 @@
                 }
             });
         }
-        
+
         function getActiveGuru() {
-            return appState.guru.find(g => g.id === appState.activeGuruId) || appState.guru[0] || {};
+            if (!appState.activeGuruId) return {}; // Update data guru
+            return appState.guru.find(g => g.id === appState.activeGuruId) || {};
         }
         
         function getJournalKey() {
@@ -579,7 +575,7 @@
 
         function formatTanggalEditorBaris(isoDateStr, fallbackTanggal) {
             if (isoDateStr) {
-                const parts = isoDateStr.split('-');
+                const parts = isoDateStr.split('');
                 if (parts.length === 3) {
                     const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                     if (!isNaN(d.getTime())) {
@@ -723,7 +719,7 @@
                 const row = entries[index];
                 row.isHoliday = !row.isHoliday;
                 if (row.isHoliday) {
-                    if (!row.materi || row.materi.trim() === '' || row.materi === '-') {
+                    if (!row.materi || row.materi.trim() === '' || row.materi === '') {
                         row.materi = 'Libur';
                     }
                     row.keterangan = 'Libur';
@@ -1095,7 +1091,7 @@
         }
         
         function renderFormGuru(container) {
-            let tbody = appState.guru.map((g, idx) => `<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors"><td class="p-3 text-sm text-center text-slate-500 align-top">${idx + 1}</td><td class="p-3 text-sm font-medium text-slate-800 align-top"><div class="mb-1">${g.nama || 'Belum ada nama'}</div><div class="text-xs text-slate-500 font-normal">NIP. ${g.nip || '-'}</div><div class="text-xs text-slate-500 font-normal">NUPTK. ${g.nuptk || '-'}</div></td><td class="p-3 text-sm text-slate-600 align-top"><div class="font-medium text-slate-700">${g.status || '-'}</div>${g.golongan || g.pangkat ? `<div class="text-xs text-slate-500">${g.pangkat || ''} ${g.golongan ? '('+g.golongan+')' : ''}</div>` : ''}</td><td class="p-3 text-sm text-slate-600 align-top">${g.tugasTambahan || '-'}</td><td class="p-3 text-sm text-slate-600 align-top">${g.mapel || '-'}</td></tr>`).join('');
+            let tbody = appState.guru.map((g, idx) => `<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors"><td class="p-3 text-sm text-center text-slate-500 align-top">${idx + 1}</td><td class="p-3 text-sm font-medium text-slate-800 align-top"><div class="mb-1">${g.nama || 'Belum ada nama'}</div><div class="text-xs text-slate-500 font-normal">NIP. ${g.nip || ''}</div><div class="text-xs text-slate-500 font-normal">NUPTK. ${g.nuptk || ''}</div></td><td class="p-3 text-sm text-slate-600 align-top"><div class="font-medium text-slate-700">${g.status || ''}</div>${g.golongan || g.pangkat ? `<div class="text-xs text-slate-500">${g.pangkat || ''} ${g.golongan ? '('+g.golongan+')' : ''}</div>` : ''}</td><td class="p-3 text-sm text-slate-600 align-top">${g.tugasTambahan || ''}</td><td class="p-3 text-sm text-slate-600 align-top">${g.mapel || ''}</td></tr>`).join('');
             container.innerHTML = `
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4 gap-4">
@@ -1140,8 +1136,10 @@
             const bulanOptions = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
                 .map((b, i) => `<option value="${i+1}" ${appState.generator.bulan == i+1 ? 'selected' : ''}>${b}</option>`).join('');
             const tahunOptions = [2026, 2027, 2028, 2029, 2030].map(t => `<option value="${t}" ${appState.generator.tahun == t ? 'selected' : ''}>${t}</option>`).join('');
-            const guruOptions = appState.guru.map(g => `<option value="${g.id}" ${appState.activeGuruId == g.id ? 'selected' : ''}>${g.nama}</option>`).join('');
-            
+            const defaultOption = `<option value="" disabled selected hidden ${!appState.activeGuruId ? 'selected' : ''}>-- Pilih Guru --</option>`;
+            const guruOptionsList = appState.guru.map(g => `<option value="${g.id}" ${appState.activeGuruId == g.id ? 'selected' : ''}>${g.nama}</option>`).join('');
+            const guruOptions = defaultOption + guruOptionsList;
+
             const mm = String(appState.generator.bulan).padStart(2, '0');
             const maxDays = new Date(appState.generator.tahun, appState.generator.bulan, 0).getDate();
             const minDate = `${appState.generator.tahun}-${mm}-01`;
@@ -1156,8 +1154,10 @@
                     <h3 class="text-xl font-bold text-slate-800 mb-6 border-b pb-3 flex items-center"><i class="fa-solid fa-gear text-primary mr-2"></i> Pengaturan Parameter Laporan</h3>
                     <div class="mb-6">
                         <label class="block text-sm font-bold text-slate-700 mb-2">Pilih Guru</label>
-                        <select onchange="appState.activeGuruId = parseInt(this.value); saveState(); renderPengaturanForm($('view-content'));" class="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-base bg-blue-50/60 font-bold text-primary cursor-pointer">${guruOptions.length ? guruOptions : '<option disabled selected>Belum ada data guru</option>'}</select>
+                        <!-- Update data guru: Mengubah activeGuruId sesuai pilihan guru atau null jika "Pilih Guru" -->
+                        <select onchange="appState.activeGuruId = this.value ? parseInt(this.value) : null; saveState(); renderPengaturanForm($('view-content'));" class="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-base bg-blue-50/60 font-bold text-primary cursor-pointer">${guruOptions}</select>
                         <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i> Semua dokumen akan di-generate menggunakan data dari guru yang dipilih di sini.</p>
+                        ${!appState.activeGuruId ? '<p class="text-xs text-amber-600 font-semibold mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Silakan pilih guru terlebih dahulu untuk menampilkan data pada dokumen.</p>' : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div><label class="block text-sm font-semibold text-slate-700 mb-2">Bulan Laporan</label><select onchange="updateState('generator', 'bulan', this.value); renderPengaturanForm($('view-content'));" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary text-sm cursor-pointer">${bulanOptions}</select></div>
@@ -1319,7 +1319,7 @@
                         <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
                         <div style="font-size: 12pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
                         <div style="font-size: 7pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
-                        <div style="font-size: 7pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                        <div style="font-size: 7pt;">NSS : ${s.nss || ''} , NPSN : ${s.npsn || ''}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || ''}</span></div>
                     </td><td style="width: 12%; text-align: center;"></td>
                 </tr>
             </table><br>`;
@@ -1333,7 +1333,7 @@
                         <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
                         <div style="font-size: 20pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
                         <div style="font-size: 10pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
-                        <div style="font-size: 10pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                        <div style="font-size: 10pt;">NSS : ${s.nss || ''} , NPSN : ${s.npsn || ''}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || ''}</span></div>
                     </td>
                     <td style="width: 20%; text-align: left;">${jLogoR}</td>
                 </tr>
@@ -1348,7 +1348,7 @@
                             <div style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
                             <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
                             <div style="font-size: 9pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
-                            <div style="font-size: 9pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                            <div style="font-size: 9pt;">NSS : ${s.nss || ''} , NPSN : ${s.npsn || ''}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || ''}</span></div>
                         </td>${extraLogo}
                     </tr>
                 </table>`;
@@ -1372,32 +1372,32 @@
                             <tr style="padding : 0 5pt">
                                 <td style="font-family: 'Cambria'; font-size: 14pt; width: 40%; font-weight: bold; vertical-align: middle;">NAMA GURU</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; width: 5%; vertical-align: middle;">:</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 55%; font-weight: bold;">${g.nama}</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; width: 55%; font-weight: bold;">${g.nama || ''}</td>
                             </tr>
                             <tr style="height: 40pt">
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NIP</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nip || '-'}</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nip || ''}</td>
                             </tr>
                             <tr style="height : 40pt">
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NUPTK</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nuptk || '-'}</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nuptk || ''}</td>
                             </tr>
                             <tr style="height: 40pt">
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NRG</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nrg || '-'}</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.nrg || ''}</td>
                             </tr>
                             <tr style="height: 40pt">
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NPWP</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.npwp || '-'}</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.npwp || ''}</td>
                             </tr>
                             <tr style="height: 40pt">
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NOMOR REKENING / BANK</td>
                                 <td style="font-family: 'Cambria'; font-size: 14pt; vertical-align: middle;">:</td>
-                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.norek || '-'} / ${g.bank || '-'}</td>
+                                <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold;">${g.norek || ''} / ${g.bank || ''}</td>
                             </tr>
                             <tr style="height: 40pt">
                                 <td style="font-family: 'Cambria'; font-size: 14pt; font-weight: bold; vertical-align: middle;">NAMA SEKOLAH</td>
@@ -1444,7 +1444,7 @@
                                                     <div style="font-size: 18pt; font-weight: bold; text-transform: uppercase;">DINAS PENDIDIKAN DAERAH</div>
                                                     <div style="font-size: 20pt; font-weight: bold; text-transform: uppercase;">${(s.nama || '').toUpperCase()}</div>
                                                     <div style="font-size: 10pt; margin-top: 5px;">Alamat : ${s.alamat || ''}, Desa ${s.desa || ''}, Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''},</div>
-                                                    <div style="font-size: 10pt;">NSS : ${s.nss || '-'} , NPSN : ${s.npsn || '-'}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || '-'}</span></div>
+                                                    <div style="font-size: 10pt;">NSS : ${s.nss || ''} , NPSN : ${s.npsn || ''}, Kode Pos : ${s.kodepos || ''}, E-Mail : <span style="color: blue; text-decoration: underline;">${s.email || ''}</span></div>
                                                 </td>
                                                 <td style="width: 20%; text-align: center; vertical-align: middle; padding-bottom: 8px;">
                                                     ${s.logoKanan ? `<img src="${s.logoKanan}" class="doc-logo" style="object-fit:contain;" width="150" height="150">` : ''}
@@ -1461,22 +1461,22 @@
                                                 <tr style="height: 40pt">
                                                     <td style="width: 38%; color: #000;">NAMA</td>
                                                     <td style="width: 4%; text-align: center; color: #000;">:</td>
-                                                    <td style="width: 58%; font-weight: bold; color: #000;">${g.nama}</td>
+                                                    <td style="width: 58%; font-weight: bold; color: #000;">${g.nama || ''}</td>
                                                 </tr>
                                                 <tr style="height: 40pt">
                                                     <td style="color: #000;">NIP</td>
                                                     <td style="text-align: center; color: #000;">:</td>
-                                                    <td style="font-weight: bold; color: #000;">${g.nip || '-'}</td>
+                                                    <td style="font-weight: bold; color: #000;">${g.nip || ''}</td>
                                                 </tr>
                                                 <tr style="height: 40pt">
                                                     <td style="color: #000;">NUPTK</td>
                                                     <td style="text-align: center; color: #000;">:</td>
-                                                    <td style="font-weight: bold; color: #000;">${g.nuptk || '-'}</td>
+                                                    <td style="font-weight: bold; color: #000;">${g.nuptk || ''}</td>
                                                 </tr>
                                                 <tr style="height: 40pt">
                                                     <td style="color: #000;">MATA PELAJARAN</td>
                                                     <td style="text-align: center; color: #000;">:</td>
-                                                    <td style="font-weight: bold; color: #000;">${g.mapel || '-'}</td>
+                                                    <td style="font-weight: bold; color: #000;">${g.mapel || ''}</td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -1534,47 +1534,47 @@
                         <tr>
                             <td style="width: 32%; font-weight: bold;">Nama</td>
                             <td style="width: 2%; text-align: center"><b>:</b></td>
-                            <td style="width: 66%; font-weight: bold;"><b>${g.nama || '-'}</b></td>
+                            <td style="width: 66%; font-weight: bold;"><b>${g.nama || ''}</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">Jabatan</td>
                             <td><b>:</b></td>
-                            <td><b>${g.jabatan || '-'}</b></td>
+                            <td><b>${g.jabatan || ''}</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">NIP</td>
                             <td><b>:</b></td>
-                            <td><b>${g.nip || '-'}</b></td>
+                            <td><b>${g.nip || ''}</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">Pangkat / Golongan</td>
                             <td><b>:</b></td>
-                            <td><b>${g.golongan || '-'}</b></td>
+                            <td><b>${g.golongan || ''}</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">NUPTK</td>
                             <td><b>:</b></td>
-                            <td><b>${g.nuptk || '-'}</b></td>
+                            <td><b>${g.nuptk || ''}</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">Bidang Studi</td>
                             <td><b>:</b></td>
-                            <td><b>${g.bidangStudi || '-'}</b></td>
+                            <td><b>${g.bidangStudi || ''}</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">Jumlah jam mengajar</td>
                             <td><b>:</b></td>
-                            <td><b>${g.jamMengajar || '0'} jam</b></td>
+                            <td><b>${g.jamMengajar || ''} Jam</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">Jumlah Jam Tugas Tambahan</td>
                             <td><b>:</b></td>
-                            <td><b>${g.jamTambahan || '0'} jam</b></td>
+                            <td><b>${g.jamTambahan || ''} Jam</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">Jumlah Beban Kerja</td>
                             <td><b>:</b></td>
-                            <td><b>${g.bebanKerja || '0'} Jam</b></td>
+                            <td><b>${g.bebanKerja || '' } Jam</b></td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold;">Unit Kerja</td>
@@ -1584,7 +1584,7 @@
                         <tr>
                             <td style="font-weight: bold; vertical-align: top;">Alamat</td>
                             <td style="vertical-align: top;"><b>:</b></td>
-                            <td><b>${s.alamat || '-'}, Desa ${s.desa || '-'}, <br> Kec. ${s.kecamatan || '-'}, Kab. ${s.kabupaten || '-'}</b></td>
+                            <td><b>${s.alamat || ''}, Desa ${s.desa || ''}, <br> Kec. ${s.kecamatan || ''}, Kab. ${s.kabupaten || ''}</b></td>
                         </tr>
                     </table>
                     <p style="margin-top: 15px; text-align: left;">Saudara tersebut diatas termasuk dalam <i>Lampiran Penerima Tunjangan Profesi Guru PNS, PPPK, <br>
@@ -1629,14 +1629,14 @@
                 return `
                 <tr ${bgAttr}>
                     <td>${i + 1}.</td>
-                    <td style="height: 30pt; text-align: left; padding-left: 8px;">${g.nama}</td>
-                    <td>${g.nip || '-'}</td>
-                    <td>${g.nuptk || '-'}</td>
-                    <td>${g.nopesSertifikasi || '-'}</td>
-                    <td>${g.nrg || '-'}</td>
-                    <td>${g.bank || '-'}</td>
-                    <td>${g.norek || '-'}</td>
-                    <td>${g.bidang || '-'}</td>
+                    <td style="height: 30pt; text-align: left; padding-left: 8px;">${g.nama || ''}</td>
+                    <td>${g.nip || ''}</td>
+                    <td>${g.nuptk || ''}</td>
+                    <td>${g.nopesSertifikasi || ''}</td>
+                    <td>${g.nrg || ''}</td>
+                    <td>${g.bank || ''}</td>
+                    <td>${g.norek || ''}</td>
+                    <td>${g.bidang || ''}</td>
                 </tr>`;
                 }).join('');
             return `
@@ -1710,27 +1710,27 @@
                             <tr>
                                 <td style="width: 28%;">NAMA</td>
                                 <td style="width: 2%; text-align: center">:</td>
-                                <td style="width: 70%;">${g.nama}</td>
+                                <td style="width: 70%;">${g.nama || ''}</td>
                             </tr>
                             <tr>
                                 <td>NIP</td>
                                 <td>:</td>
-                                <td>${g.nip || '-'}</td>
+                                <td>${g.nip || ''}</td>
                             </tr>
                             <tr>
                                 <td>PANGKAT / GOL</td>
                                 <td>:</td>
-                                <td>${g.pangkat || '-'} / ${g.golongan || '-'}</td>
+                                <td>${g.pangkat || ''} / ${g.golongan || ''}</td>
                             </tr>
                             <tr>
                                 <td>JABATAN</td>
                                 <td>:</td>
-                                <td>${g.jabatan || '-'}</td>
+                                <td>${g.jabatan || ''}</td>
                             </tr>
                             <tr>
                                 <td>STATUS</td>
                                 <td>:</td>
-                                <td>${g.status || '-'}</td>
+                                <td>${g.status || ''}</td>
                             </tr>
                         </table>
                         <br>
@@ -1796,7 +1796,7 @@
             let displayNo = 1;
             const rows = entries.map((r, i) => {
                 let noCell = '', tglCell = '';
-                const editable = (field, fallback='-') => `contenteditable="true" onblur="updateJournalRowFromPreview(${i}, '${field}', this)"`;
+                const editable = (field, fallback='') => `contenteditable="true" onblur="updateJournalRowFromPreview(${i}, '${field}', this)"`;
                 if (!r.isSubRow) {
                     let tglDisplay = r.tanggal; const dObj = new Date(r.isoDate);
                     if (!isNaN(dObj)) tglDisplay = `${["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"][dObj.getDay()]}, ${dObj.getDate().toString().padStart(2, '0')} ${getNamaBulan(dObj.getMonth() + 1)} `;
@@ -1838,32 +1838,32 @@
                             <tr>
                                 <td style="width: 20%;">NAMA</td>
                                 <td style="width: 2%; text-align: center">:</td>
-                                <td style="width: 78%">${g.nama}</td>
+                                <td style="width: 78%">${g.nama || ''}</td>
                             </tr>
                             <tr>
                                 <td>NIP</td>
                                 <td>:</td>
-                                <td>${g.nip || '-'}</td>
+                                <td>${g.nip || ''}</td>
                             </tr>
                             <tr>
                                 <td>TUGAS TAMBAHAN</td>
                                 <td>:</td>
-                                <td>${g.tugasTambahan || '-'}</td>
+                                <td>${g.tugasTambahan || ''}</td>
                             </tr>
                             <tr>
                                 <td>STATUS</td>
                                 <td>:</td>
-                                <td>${g.status || '-'}</td>
+                                <td>${g.status || ''}</td>
                             </tr>
                             <tr>
                                 <td>MAPEL</td>
                                 <td>:</td>
-                                <td>${g.mapel || '-'}</td>
+                                <td>${g.mapel || ''}</td>
                             </tr>
                             <tr>
                                 <td>JUMLAH JAM</td>
                                 <td>:</td>
-                                <td>${g.bebanKerja || '0'} JP</td>
+                                <td>${g.bebanKerja || ''} JP</td>
                             </tr>
                         </table>
                         <br>
@@ -1914,8 +1914,8 @@
                                     <div>Guru Mata Pelajaran,</div>
                                     <div class="doc-sign-box" style="margin-top: 0;">
                                         <br><br><br><br>
-                                        <div class="doc-sign-name" style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${g.nama}</div>
-                                        <div class="doc-sign-nip" style="font-weight: bold; margin: 0; padding: 0">NIP. ${g.nip || '-'}</div>
+                                        <div class="doc-sign-name" style="font-weight: bold; text-decoration: underline; margin: 0; padding: 0">${g.nama || ''}</div>
+                                        <div class="doc-sign-nip" style="font-weight: bold; margin: 0; padding: 0">NIP. ${g.nip || ''}</div>
                                     </div>
                                 </td>
                             </tr>
